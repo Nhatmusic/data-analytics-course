@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 02 – Can We Trust This Dataset?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* palette – bg #fafaf6 · panel #ffffff · ink #14141a · lime #a4d925 · pink #ff3d94 · blue #2f7dff · yellow #ffc328
+     type – Space Grotesk (display) · Inter (body) · JetBrains Mono (HUD / labels)
+     kept identical to Session 01 on purpose – same field-notebook system across all 12 sessions */
+  :root{
+    --bg:#fafaf6; --panel:#ffffff; --panel2:#f2f2ea; --line:#1c1c22; --ink:#14141a; --muted:#6c6c76;
+    --lime:#a4d925; --pink:#ff3d94; --blue:#2f7dff; --yellow:#ffc328; --lime-deep:#5c7a17; --red:#e0405a; --green:#2f9e6f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+  #hello{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;padding:24px;}
+  #hello .badge{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:6px 14px;border-radius:20px;}
+  #hello h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(32px,7vw,62px);margin:0;line-height:1.12;color:var(--ink);}
+  #hello h1 span{color:var(--pink);}
+  #hello p.sub{font-size:16px;color:var(--muted);max-width:48ch;margin:0;}
+  .start-btn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--ink);background:var(--lime);border:2px solid var(--ink);padding:16px 36px;border-radius:40px;cursor:pointer;box-shadow:0 6px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;}
+  .start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink);}
+  .start-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+
+  #app{display:none;max-width:1060px;margin:0 auto;padding:28px 22px 70px;}
+  .hud-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .hud-top .tag{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .xp-bar{flex:1;height:8px;background:var(--panel2);border-radius:6px;margin:0 16px;overflow:hidden;}
+  .xp-fill{height:100%;width:14%;background:linear-gradient(90deg,var(--blue),var(--lime));transition:width .3s ease;}
+  .xp-count{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);white-space:nowrap;}
+
+  .levels{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;}
+  .lvl{flex:1;min-width:104px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12.5px;text-align:center;padding:11px 6px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;transition:transform .12s ease, border-color .12s ease, color .12s ease;}
+  .lvl small{display:block;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:10px;letter-spacing:.08em;margin-bottom:3px;opacity:.8;}
+  .lvl:hover{transform:translateY(-2px);}
+  .lvl.active{color:var(--ink);}
+  .lvl[data-lvl="1"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="2"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="3"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl[data-lvl="4"].active{background:var(--yellow);border-color:var(--yellow);}
+  .lvl[data-lvl="5"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="6"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="7"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+
+  .stage{background:var(--panel);border:2px solid var(--line);border-radius:20px;padding:30px 26px 34px;}
+  .page{display:none;}
+  .page.active{display:block;animation:pop .22s ease;}
+  @keyframes pop{from{opacity:0;transform:scale(.98);}to{opacity:1;transform:scale(1);}}
+  .page h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(22px,4vw,32px);margin:0 0 8px;}
+  .page .lede{font-size:15.5px;color:var(--muted);max-width:66ch;margin:0 0 20px;}
+  .section-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;}
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;}
+  .chip{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:11px 15px;font-size:14px;font-weight:600;}
+  .chip .ico{font-size:19px;}
+
+  .hook{margin-top:18px;background:rgba(47,125,255,0.08);border:1px solid var(--blue);border-radius:14px;padding:15px 18px;}
+  .hook .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;}
+  .hook p{margin:0;font-size:14.5px;font-weight:500;}
+
+  .mission{background:rgba(255,195,40,0.18);border:1px solid var(--yellow);border-radius:14px;padding:14px 18px;margin-bottom:16px;}
+  .mission .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8a6a00;margin-bottom:6px;}
+  .mission p{margin:0;font-size:14.5px;font-weight:600;}
+
+  .discuss{margin-top:18px;background:rgba(164,217,37,0.14);border:1px solid var(--lime);border-radius:14px;padding:15px 18px;}
+  .discuss .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--lime-deep);margin-bottom:6px;}
+  .discuss p{margin:0;font-size:14.5px;font-weight:500;}
+
+  .sheets-cue{margin-top:18px;background:rgba(47,158,111,0.10);border:1px solid var(--green);border-radius:14px;padding:15px 18px;}
+  .sheets-cue .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:6px;}
+  .sheets-cue p{margin:0;font-size:14.5px;font-weight:600;}
+  .sheets-cue a{color:var(--green);}
+
+  /* ---- reference table ---- */
+  .data-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;margin:6px 0;}
+  table.data-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px;min-width:700px;}
+  table.data-table th{background:var(--panel2);text-align:left;padding:9px 10px;border-bottom:2px solid var(--line);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+  table.data-table td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  table.data-table tr:nth-child(even) td{background:var(--panel2);}
+  table.data-table td.err-cell{background:rgba(224,64,90,0.14) !important;color:var(--red);font-weight:700;}
+  table.data-table td.unk-cell{background:rgba(255,195,40,0.18) !important;color:#8a6a00;font-weight:700;}
+  table.data-table td.blank-cell{background:rgba(108,108,118,0.1) !important;font-style:italic;color:var(--muted);}
+
+  .verified-tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--green);margin:6px 0 4px;}
+
+  /* ---- quick quiz (level 2) ---- */
+  .qq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+  .qq-card{border:2px solid var(--line);border-radius:14px;padding:15px 17px;cursor:pointer;transition:background .12s ease;}
+  .qq-card .qq-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;margin-bottom:4px;}
+  .qq-card .qq-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+  .qq-card .qq-a{display:none;font-size:13px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);line-height:1.5;}
+  .qq-card.revealed{background:var(--panel2);border-color:var(--lime);}
+  .qq-card.revealed .qq-a{display:block;}
+  .qq-card.revealed .qq-hint{display:none;}
+
+  /* ---- 6-step process flow ---- */
+  .process-flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:18px 0 8px;}
+  .pf-step{flex:1;min-width:130px;background:var(--panel2);border:2px solid var(--line);border-radius:14px;padding:14px 12px;position:relative;}
+  .pf-step .pf-no{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px;}
+  .pf-step .pf-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13.5px;display:block;margin-bottom:4px;line-height:1.25;}
+  .pf-step .pf-detail{font-size:11px;color:var(--muted);line-height:1.4;}
+  .pf-arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:17px;padding:0 3px;flex:0 0 auto;}
+  .pf-step.here{border-color:var(--pink);background:rgba(255,61,148,0.08);}
+  .pf-step.here .pf-no{color:var(--pink);}
+  .pf-badge{position:absolute;top:-11px;left:12px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:var(--pink);color:#fff;padding:3px 7px;border-radius:8px;}
+  .pf-source{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin:6px 0 4px;}
+  .pf-source a{color:var(--muted);}
+  @media (max-width:760px){ .process-flow{flex-direction:column;} .pf-arrow{transform:rotate(90deg);padding:2px 0;} }
+
+  /* ---- toolkit (3 tools) ---- */
+  .tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;}
+  .tool-card{display:flex;flex-direction:column;border:2px solid var(--line);border-top:5px solid var(--tc,var(--blue));border-radius:14px;padding:16px 18px;background:var(--panel2);}
+  .tool-ico{font-size:24px;margin-bottom:6px;}
+  .tool-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;margin-bottom:3px;}
+  .tool-role{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--tc,var(--blue));margin-bottom:8px;}
+  .tool-desc{font-size:12.5px;color:var(--ink);line-height:1.5;}
+
+  /* ---- goal card ---- */
+  .goal-card{border:2px solid var(--line);border-radius:16px;padding:20px 22px;background:var(--panel2);margin-bottom:18px;}
+  .goal-card .gc-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--pink);margin-bottom:8px;}
+  .goal-card .gc-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(17px,2.6vw,22px);line-height:1.32;margin:0;}
+  .goal-card .gc-source{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:10px;}
+  .goal-card .gc-source a{color:var(--muted);}
+
+  /* ---- column guide (level 5) ---- */
+  .col-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;}
+  .col-card{border:2px solid var(--line);border-radius:14px;padding:15px 17px;cursor:pointer;transition:background .12s ease;}
+  .col-card .cg-name{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14.5px;display:block;margin-bottom:3px;}
+  .col-card .cg-type{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;display:inline-block;padding:2px 8px;border-radius:7px;margin-bottom:8px;}
+  .col-card .cg-type.quant{background:rgba(47,125,255,0.12);color:var(--blue);}
+  .col-card .cg-type.cat{background:rgba(255,61,148,0.12);color:var(--pink);}
+  .col-card .cg-meaning{font-size:12.5px;color:var(--ink);margin-bottom:8px;}
+  .col-card .cg-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+  .col-card .cg-dirty{display:none;font-size:12px;color:var(--red);background:rgba(224,64,90,0.07);border-radius:8px;padding:8px 10px;margin-top:6px;}
+  .col-card.revealed{background:var(--panel2);}
+  .col-card.revealed .cg-dirty{display:block;}
+  .col-card.revealed .cg-hint{display:none;}
+
+  /* ---- mini workflow stepper (level 6) ---- */
+  .mini-flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:16px 0 20px;}
+  .mf-step{flex:1;min-width:120px;background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:10px 12px;text-align:center;}
+  .mf-step .mf-no{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--muted);display:block;}
+  .mf-step .mf-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;}
+  .mf-arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px;padding:0 4px;flex:0 0 auto;}
+  @media (max-width:640px){ .mini-flow{flex-direction:column;} .mf-arrow{transform:rotate(90deg);padding:2px 0;} }
+
+  /* ---- task cards (the 4-question exercise, level 6) ---- */
+  .task-grid{display:flex;flex-direction:column;gap:14px;}
+  .task-card{border:2px solid var(--line);border-radius:16px;padding:18px 20px;cursor:pointer;transition:background .12s ease;}
+  .task-card.expanded{background:var(--panel2);}
+  .task-head{display:flex;align-items:flex-start;gap:12px;}
+  .task-no{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:#fff;background:var(--ink);width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .task-card[data-t="1"] .task-no{background:var(--pink);}
+  .task-card[data-t="2"] .task-no{background:var(--blue);}
+  .task-card[data-t="3"] .task-no{background:var(--lime-deep);}
+  .task-card[data-t="4"] .task-no{background:#8a6a00;}
+  .task-title-block{flex:1;}
+  .task-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;display:block;}
+  .task-sub{font-size:12.5px;color:var(--muted);display:block;margin-top:2px;}
+  .task-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;align-self:center;}
+  .task-detail{display:none;margin-top:16px;padding-top:16px;border-top:1px dashed var(--line);}
+  .task-card.expanded .task-detail{display:block;}
+  .task-card.expanded .task-hint{display:none;}
+
+  .find-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .find-tag{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:8px;background:rgba(224,64,90,0.1);color:var(--red);}
+
+  .formula-label{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 5px;}
+  .formula-box{font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--ink);color:#e8f7d0;border-radius:10px;padding:10px 14px;display:block;overflow-x:auto;white-space:pre;margin-bottom:6px;}
+  .task-note{font-size:13px;color:var(--ink);line-height:1.55;margin:8px 0;}
+  .task-note b{color:var(--ink);}
+
+  .your-turn{background:rgba(47,125,255,0.07);border:1px solid var(--blue);border-radius:10px;padding:10px 14px;margin-top:10px;font-size:13px;}
+  .your-turn .yt-tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);font-weight:700;margin-bottom:4px;display:block;}
+
+  .stuck-toggle{
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--muted);
+    border:1px dashed var(--line);border-radius:20px;padding:6px 12px;display:inline-block;cursor:pointer;margin-top:10px;
+  }
+  .stuck-reveal{display:none;margin-top:10px;}
+  .stuck-reveal.open{display:block;}
+
+  .task-detail ul{margin:6px 0 0;padding-left:18px;}
+  .task-detail li{font-size:13px;margin-bottom:6px;line-height:1.55;}
+
+  .script-box{border:2px dashed var(--line);border-radius:14px;padding:16px 18px;margin-top:16px;}
+  .script-box .sb-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .script-box ol{margin:0;padding-left:20px;}
+  .script-box li{font-size:14px;margin-bottom:8px;}
+  .script-box li b{color:var(--blue);}
+
+  /* ---- recap ---- */
+  .recap-statement{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(19px,3.4vw,26px);line-height:1.35;margin:6px 0 22px;}
+  .recap-statement .hl-pink{color:var(--pink);}
+  .recap-statement .hl-blue{color:var(--blue);}
+  .recap-statement .hl-yellow{color:#8a6a00;}
+  .success-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px;}
+  .success-card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;}
+  .success-card .sc-ico{font-size:22px;display:block;margin-bottom:4px;}
+  .success-card .sc-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13.5px;display:block;margin-bottom:3px;}
+  .success-card .sc-detail{font-size:11.5px;color:var(--muted);}
+  .next-tag{margin-top:20px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;}
+  .next-tag b{color:var(--lime-deep);}
+
+  @media (max-width:560px){ .lvl{min-width:100%;} }
+</style>
+</head>
+<body>
+
+<div id="hello">
+  <div class="badge">Session 02</div>
+  <h1>Can we trust<br>this <span>dataset</span>?</h1>
+  <p class="sub">Quick recap, the six-step map, then one real question you'll answer live in Google Sheets.</p>
+  <button class="start-btn" id="startBtn">Let's go ▶</button>
+</div>
+
+<div id="app">
+
+  <div class="hud-top">
+    <span class="tag">Progress</span>
+    <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+    <span class="xp-count" id="xpCount">LVL 1 / 7</span>
+  </div>
+
+  <div class="levels">
+    <div class="lvl active" data-lvl="1"><small>L1</small>HW2 Table 📄</div>
+    <div class="lvl" data-lvl="2"><small>L2</small>6 Steps 🗺️</div>
+    <div class="lvl" data-lvl="3"><small>L3</small>The Problem 🎯</div>
+    <div class="lvl" data-lvl="4"><small>L4</small>Structure 🔬</div>
+    <div class="lvl" data-lvl="5"><small>L5</small>Trust It? 🕵️</div>
+    <div class="lvl" data-lvl="6"><small>L6</small>Clean It? 🧹</div>
+    <div class="lvl" data-lvl="7"><small>L7</small>Recap 🏁</div>
+  </div>
+
+  <div class="stage">
+
+    <!-- LEVEL 1 – HW2 RECAP: TABLE -->
+    <div class="page active" id="page-1">
+      <h2>Quick recap: Homework 2 📄</h2>
+      <p class="lede">One look at the table before we move on. Same file, same three words: point at a row, a column, a cell.</p>
+
+      <div class="chip-row">
+        <div class="chip"><span class="ico">➡️</span>Row = Observation</div>
+        <div class="chip"><span class="ico">⬇️</span>Column = Variable</div>
+        <div class="chip"><span class="ico">🔹</span>Cell = Value</div>
+      </div>
+
+      <div class="data-table-wrap"><table class="data-table" id="vgTable"></table></div>
+    </div>
+
+    <!-- LEVEL 2 – 6 STEPS -->
+    <div class="page" id="page-2">
+      <h2>The full picture: six steps 🗺️</h2>
+      <p class="lede">Last time: ask a question → find the pattern → decide. That was the three-step summary. Here's the real six-step version — and today we actually do half of it.</p>
+
+      <div class="process-flow" id="processFlow">
+        <div class="pf-step here"><span class="pf-badge">Today</span><span class="pf-no">STEP 1</span><span class="pf-title">Define the Problem</span><span class="pf-detail">Pin down what we're trying to answer</span></div>
+        <div class="pf-arrow">→</div>
+        <div class="pf-step here"><span class="pf-badge">Today</span><span class="pf-no">STEP 2</span><span class="pf-title">Data Collection</span><span class="pf-detail">Open the real messy file and learn its shape</span></div>
+        <div class="pf-arrow">→</div>
+        <div class="pf-step here"><span class="pf-badge">Today</span><span class="pf-no">STEP 3</span><span class="pf-title">Data Cleaning</span><span class="pf-detail">Inspect, spot duplicates, clean placeholder values</span></div>
+        <div class="pf-arrow">→</div>
+        <div class="pf-step"><span class="pf-no">STEP 4</span><span class="pf-title">Analyze the Data</span><span class="pf-detail">Find patterns, trends, relationships</span></div>
+        <div class="pf-arrow">→</div>
+        <div class="pf-step"><span class="pf-no">STEP 5</span><span class="pf-title">Visualize Results</span><span class="pf-detail">Charts and dashboards that show the pattern</span></div>
+        <div class="pf-arrow">→</div>
+        <div class="pf-step"><span class="pf-no">STEP 6</span><span class="pf-title">Interpret &amp; Decide</span><span class="pf-detail">Turn the finding into a recommendation</span></div>
+      </div>
+      <div class="pf-source">Source: <a href="https://www.geeksforgeeks.org/data-analysis/six-steps-of-data-analysis-process/" target="_blank" rel="noopener">GeeksforGeeks — Six Steps of Data Analysis Process</a></div>
+
+      <div class="mission">
+        <div class="dl">🎯 Why three steps today, not one</div>
+        <p>Most classes stop at "here's how you'd clean data." We're doing steps 1 through 3 back to back so you feel how they depend on each other: a badly defined problem makes it impossible to know what "clean" even means, and cleaning without a question just tidies data for its own sake.</p>
+      </div>
+
+      <div class="section-tag" style="margin-top:24px;">Your toolkit for the whole course</div>
+      <p class="lede" style="margin-bottom:14px;">Three tools, three jobs. Every session maps to one of these — by the end you'll have used all three on the same dataset.</p>
+      <div class="tool-grid">
+        <div class="tool-card" style="--tc:var(--blue);">
+          <span class="tool-ico">📊</span>
+          <span class="tool-name">Excel / Google Sheets</span>
+          <span class="tool-role">Data Collection &amp; Cleaning</span>
+          <span class="tool-desc">Best for small datasets, ad-hoc analysis, quick formulas, manual cleaning.</span>
+        </div>
+        <div class="tool-card" style="--tc:var(--pink);">
+          <span class="tool-ico">🗄️</span>
+          <span class="tool-name">SQL</span>
+          <span class="tool-role">Data Storage &amp; Extraction</span>
+          <span class="tool-desc">Query relational databases, handle millions of rows, filter and join data from multiple sources.</span>
+        </div>
+        <div class="tool-card" style="--tc:var(--lime-deep);">
+          <span class="tool-ico">📈</span>
+          <span class="tool-name">Tableau</span>
+          <span class="tool-role">Data Visualization &amp; Reporting</span>
+          <span class="tool-desc">Connects to cleaned data to build interactive charts, graphs, and executive dashboards.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 – DEFINE THE PROBLEM -->
+    <div class="page" id="page-3">
+      <h2>Step 1: define the problem 🎯</h2>
+      <p class="lede">Before anyone opens a spreadsheet, we say out loud what we're actually trying to find out. The first step is simply to check whether we can trust this data at all.</p>
+
+      <div class="goal-card">
+        <div class="gc-tag">The scenario</div>
+        <p class="gc-q">A small cafe's point-of-sale system exported its transaction history — 10,000 rows of synthetic sales data. The owner wants two things: total sales for each item, and total sales for each month. But those numbers only mean something if the data behind them is trustworthy — so before we calculate anything, we check: can we actually trust this dataset?</p>
+        <div class="gc-source">The file: <a href="https://www.kaggle.com/datasets/ahmedmohamed2003/cafe-sales-dirty-data-for-cleaning-training" target="_blank" rel="noopener">Cafe Sales — Dirty Data for Cleaning Training (Kaggle)</a></div>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 – EXPLAIN THE STRUCTURE -->
+    <div class="page" id="page-4">
+      <h2>Step 2: what's actually in this file 🔬</h2>
+      <p class="lede">Eight columns. Tap each to see what it means, what type it is, and — since this file is deliberately dirty — what's wrong with it. This is the map you'll need for the next level.</p>
+
+      <div class="sheets-cue">
+        <div class="dl">🖥️ Instructor cue</div>
+        <p>Open <a href="https://www.kaggle.com/datasets/ahmedmohamed2003/cafe-sales-dirty-data-for-cleaning-training" target="_blank" rel="noopener">the real file</a>, download the CSV, import into Google Sheets, and share your screen — walk the columns below against the real thing.</p>
+      </div>
+
+      <div class="section-tag" style="margin-top:20px;">Answer these four first</div>
+      <div class="qq-grid" id="orientGrid"></div>
+
+      <div class="section-tag" style="margin-top:26px;">3 &amp; 4, in detail — tap each column</div>
+      <div class="col-grid" id="colGrid"></div>
+
+      <div class="section-tag" style="margin-top:22px;">Three real rows from the actual file</div>
+      <div class="verified-tag">✓ verified — pulled directly from the dataset, not illustrative</div>
+      <div class="data-table-wrap"><table class="data-table" id="cafeSampleTable"></table></div>
+
+      <div class="hook" style="margin-top:18px;">
+        <div class="dl">One column to watch</div>
+        <p><b>Total Spent</b> should equal Quantity × Price Per Unit. Row 3 above is a real example where it doesn't — the cell literally contains the text "ERROR" instead of a number. Note it now; you'll formally check it in a future session.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 5 – CAN WE TRUST THIS DATASET? (the main 45-min exercise) -->
+    <div class="page" id="page-5">
+      <h2>Can we trust this cafe dataset? 🕵️</h2>
+      <p class="lede">One real question, two tasks, done live in your own copy of the sheet: inspect → identify duplicate transactions. You'll decide what to actually do about the mess you find on the next slide.</p>
+
+      <div class="mini-flow">
+        <div class="mf-step"><span class="mf-no">TASK 1</span><span class="mf-title">Inspect</span></div>
+        <div class="mf-arrow">→</div>
+        <div class="mf-step"><span class="mf-no">TASK 2</span><span class="mf-title">Identify</span></div>
+      </div>
+
+      <div class="sheets-cue">
+        <div class="dl">🖥️ Before you start</div>
+        <p>File → Make a copy of the imported sheet, so everyone's working their own version. Rows 2–10001 hold the data; row 1 is headers.</p>
+      </div>
+
+      <div class="task-grid" id="taskGrid"></div>
+
+      <div class="discuss" style="margin-top:20px;">
+        <div class="dl">Wrap this level with</div>
+        <p>Compare answers across the room — how many ERROR/UNKNOWN/blank values did each person find, and did everyone get the same COUNTA vs. COUNTUNIQUE gap on Transaction ID? Different totals are fine as long as everyone can point to which formula they ran.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 6 – CAN WE CLEAN IT? (brief walkthrough + brainstorm) -->
+    <div class="page" id="page-6">
+      <h2>Can we clean it? 🧹</h2>
+      <p class="lede">Payment Method, Location, and Item all have rows nothing can recompute for you — no formula tells you what payment method someone actually used. Before you see how it's usually handled, decide as a group.</p>
+
+      <div class="discuss">
+        <div class="dl">🧠 Brainstorm first — 2 minutes, out loud</div>
+        <p>Look at the three real rows below. None of these can be recomputed from other columns — they're true gaps. What would <i>you</i> do with each one — leave it blank, or label it? Say your answer before you reveal the walkthrough.</p>
+      </div>
+
+      <div class="section-tag" style="margin-top:14px;">Three real rows, three real gaps</div>
+      <div class="verified-tag">✓ verified — pulled directly from the dataset</div>
+      <div class="data-table-wrap"><table class="data-table" id="cleanExampleTable"></table></div>
+
+      <div class="cta-recap" style="margin-top:18px;">
+        <button class="start-btn" id="revealCleanBtn">🔍 Reveal the walkthrough</button>
+      </div>
+
+      <div id="cleanWalkthrough" style="display:none;margin-top:16px;">
+        <div class="formula-label">Step 1 — turn placeholders into real blanks</div>
+        <div class="task-note">Find &amp; Replace (Ctrl+H), whole sheet: replace <b>ERROR</b> with nothing, then <b>UNKNOWN</b> with nothing. This doesn't fix anything yet — it just makes the fake values visible to COUNTBLANK and filters.</div>
+
+        <div class="formula-label" style="margin-top:14px;">Step 2 — recompute what's derived (from Level 4: TXN_4271903)</div>
+        <div class="task-note">Total Spent isn't measured, it's calculated — Quantity × Price Per Unit. Recompute it instead of guessing:</div>
+        <div class="formula-box">=C2*D2</div>
+        <div class="your-turn"><span class="yt-tag">Your turn</span> Drop that formula down the whole Total Spent column.</div>
+
+        <div class="formula-label" style="margin-top:14px;">Step 3 — decide, for what can't be recomputed</div>
+        <div class="task-note">One question decides it: <b>will this column get added up, or grouped into buckets?</b></div>
+        <ul>
+          <li><b>Goes into math</b> (a SUM or AVERAGE, like Price or Total Spent) — <b>leave it blank</b>. Blank cells get skipped by those formulas automatically — a "Missing" text label would break the math instead.</li>
+          <li><b>Goes into a chart or group-by</b> (a category like Payment Method or Location) — <b>label it "Missing."</b> A blank cell here just disappears from the chart, making it look like every row had a clean answer. A "Missing" label shows up as its own bar, so the gap stays visible.</li>
+          <li><b>Impute the mode</b> (fill with the most common value) — standard in real pipelines, but flag it out loud if you do it. It quietly makes the data look more complete than it is.</li>
+        </ul>
+        <div class="task-note">Example: Payment Method has Cash, Card, <i>(blank)</i>, Cash, <i>(blank)</i>, Card. Leave the blanks and a chart shows only Cash and Card — looks clean, but hides that 2 of 6 rows had no answer. Label them "Missing" and the chart shows Cash, Card, <i>and</i> Missing — now the gap is honest, not hidden.</div>
+        <div class="task-note">To apply "Missing" in Sheets: filter the column to blank cells, type <b>Missing</b> into the first one, then fill it down through the filtered rows.</div>
+        <div class="your-turn"><span class="yt-tag">Your turn</span> For Payment Method and Location, decide blank vs. "Missing" using the question above — then compare to what you brainstormed. Same call or different? Either is fine, defend it.</div>
+
+        <div class="stuck-toggle" data-target="stuck3">what NOT to do →</div>
+        <div class="stuck-reveal" id="stuck3">
+          <div class="task-note">Don't delete a whole row over one placeholder cell. TXN_4271903's Total Spent is a one-formula fix — deleting the row throws away Item, Quantity, Payment Method, and Date to dodge a two-second recalculation.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 7 – RECAP -->
+    <div class="page" id="page-7">
+      <h2>That's today 🏁</h2>
+
+      <p class="recap-statement">Define the <span class="hl-pink">problem</span> first, learn the <span class="hl-blue">structure</span> of the data you're given, then <span class="hl-yellow">inspect, identify, and clean</span> what you can actually fix with confidence.</p>
+
+      <div class="chip-row">
+        <div class="chip"><span class="ico">🎯</span>Define first</div>
+        <div class="chip"><span class="ico">🔬</span>Know the structure</div>
+        <div class="chip"><span class="ico">🧹</span>Clean what's recoverable</div>
+      </div>
+
+      <div class="section-tag" style="margin-top:24px;">Quick recall</div>
+      <p style="font-size:16.5px;font-weight:600;">This dataset: 10,000 transactions, 8 columns. COUNTIF finds bad values like "ERROR" and "UNKNOWN." COUNTA vs. COUNTUNIQUE catches duplicate Transaction IDs. A derived column (Total Spent) gets recomputed, not guessed. For everything else: blank if it feeds a SUM or AVERAGE, "Missing" if it feeds a chart or group-by — never an invented value.</p>
+      <div class="cta-recap">
+        <button class="start-btn" style="font-size:15px;padding:12px 24px;box-shadow:0 5px 0 var(--ink);" id="revealSuccessBtn">🔓 What carries into next session</button>
+      </div>
+      <div class="success-grid" id="successGrid" style="display:none;margin-top:16px;">
+        <div class="success-card"><span class="sc-ico">📩</span><span class="sc-title">Your problem list</span><span class="sc-detail">counts of blanks, ERROR, UNKNOWN, and duplicates you found</span></div>
+        <div class="success-card"><span class="sc-ico">📝</span><span class="sc-title">Your cleaning policies</span><span class="sc-detail">what you chose for Payment Method, Location, Item — and why</span></div>
+        <div class="success-card"><span class="sc-ico">🤖</span><span class="sc-title">A live AI clean</span><span class="sc-detail">watch AI do a full pass fast, then check its work against yours</span></div>
+      </div>
+
+      <div class="next-tag">Next session — AI cleans a fresh copy of this same file live, using the problem list and policies you built today, and you catch what it gets wrong.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('hello').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+});
+
+document.querySelectorAll('.lvl').forEach(l => {
+  l.addEventListener('click', () => activateLevel(l.dataset.lvl));
+});
+function activateLevel(id){
+  const total = document.querySelectorAll('.lvl').length;
+  document.querySelectorAll('.lvl').forEach(l => l.classList.toggle('active', l.dataset.lvl === id));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
+  document.getElementById('xpFill').style.width = (id / total * 100) + '%';
+  document.getElementById('xpCount').textContent = 'LVL ' + id + ' / ' + total;
+}
+
+/* ---------- LEVEL 1 – HW2 sample table ---------- */
+const vgCols = ['Rank','Name','Platform','Year','Genre','Publisher','Global_Sales'];
+const vgRows = [
+  ['1','Wii Sports','Wii','2006','Sports','Nintendo','82.74'],
+  ['2','Super Mario Bros.','NES','1985','Platform','Nintendo','40.24'],
+  ['3','Mario Kart Wii','Wii','2008','Racing','Nintendo','35.82'],
+  ['4','Wii Sports Resort','Wii','2009','Sports','Nintendo','33.00'],
+  ['5','Pokemon Red/Pokemon Blue','GB','1996','Role-Playing','Nintendo','31.37']
+];
+function renderVgTable(){
+  const table = document.getElementById('vgTable');
+  let thead = '<thead><tr>' + vgCols.map(c => `<th>${c}</th>`).join('') + '</tr></thead>';
+  let tbody = '<tbody>' + vgRows.map(r => '<tr>' + r.map(v => `<td>${v}</td>`).join('') + '</tr>').join('') + '</tbody>';
+  table.innerHTML = thead + tbody;
+}
+renderVgTable();
+
+/* ---------- LEVEL 4 – orientation questions (asked first, before the column guide) ---------- */
+const orientItems = [
+  {q:'How many transactions are in the dataset?', a:'<div class="formula-box">=COUNTA(A2:A10001)</div>Counts every non-blank Transaction ID. Expect a number at or near <b>10,000</b> — the file is documented as 10,000 synthetic rows.'},
+  {q:'How many columns are there?', a:'<b>8.</b> Transaction ID, Item, Quantity, Price Per Unit, Total Spent, Payment Method, Location, Transaction Date. Quick check in Sheets: <div class="formula-box">=COUNTA(A1:Z1)</div>counts the non-blank header cells.'},
+  {q:'What does each column represent?', a:'Answered column by column just below — tap each card in the grid underneath this one.'},
+  {q:'What variable type is each column?', a:'Also in the grid below — each card shows quantitative/categorical right under its name, and the "what\'s dirty" reveal explains why it matters for that specific column.'}
+];
+function renderOrientGrid(){
+  const grid = document.getElementById('orientGrid');
+  grid.innerHTML = '';
+  orientItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'qq-card';
+    card.innerHTML = `<div class="qq-q">${item.q}</div><div class="qq-hint">tap to reveal →</div><div class="qq-a">${item.a}</div>`;
+    card.addEventListener('click', () => card.classList.toggle('revealed'));
+    grid.appendChild(card);
+  });
+}
+renderOrientGrid();
+
+/* ---------- LEVEL 4 – column guide (verified against public write-ups of the dataset) ---------- */
+const colItems = [
+  {name:'Transaction ID (A)', type:'cat', typeLabel:'Categorical · Nominal (ID)', meaning:'A unique code per row, e.g. "TXN_1234567." Identifies the row — not something you\'d group or chart by.',
+   dirty:'Mostly clean, but check: if the same Transaction ID appears twice, that\'s a true duplicate row, not two separate sales.'},
+  {name:'Item (B)', type:'cat', typeLabel:'Categorical · Nominal', meaning:'What was purchased — coffee, tea, sandwich, and similar cafe items.',
+   dirty:'Contains missing values and the literal text "ERROR" / "UNKNOWN" standing in for a real value — those aren\'t valid items, they\'re placeholders for "we don\'t know."'},
+  {name:'Quantity (C)', type:'quant', typeLabel:'Quantitative · Discrete', meaning:'How many units were bought in that transaction — a whole-number count.',
+   dirty:'Stored as text in the raw export (not numbers), and mixed in with "ERROR," "UNKNOWN," and blank cells — needs converting to a real number type before any math on it works.'},
+  {name:'Price Per Unit (D)', type:'quant', typeLabel:'Quantitative · Continuous', meaning:'The price of one unit of that item.',
+   dirty:'Also stored as text, with missing values scattered through the column.'},
+  {name:'Total Spent (E)', type:'quant', typeLabel:'Quantitative · Continuous (derived)', meaning:'What the customer paid on that line — in a clean row, this equals Quantity × Price Per Unit.',
+   dirty:'Missing in some rows, and — confirmed from a real row in this file (TXN_4271903: Cookie, Qty 4, Price 1) — sometimes literally contains the text "ERROR" instead of a number. Since it\'s derived, a bad Total Spent can often be recalculated from the other two columns instead of guessed.'},
+  {name:'Payment Method (F)', type:'cat', typeLabel:'Categorical · Nominal', meaning:'How the customer paid — cash, card, or a digital wallet.',
+   dirty:'A significant share of this column is null, plus more "ERROR"/"UNKNOWN" placeholders. This is one of today\'s two cleaning targets.'},
+  {name:'Location (G)', type:'cat', typeLabel:'Categorical · Nominal', meaning:'Where the transaction happened — e.g. in-store vs. takeaway.',
+   dirty:'The least complete column in the file — noticeably more blanks here than anywhere else, on top of the usual "ERROR"/"UNKNOWN" entries.'},
+  {name:'Transaction Date (H)', type:'quant', typeLabel:'Date (treat as ordered/quantitative)', meaning:'The calendar date of the sale, across 2023.',
+   dirty:'Around 460 rows have no date at all, and dates aren\'t stored in a consistent order — sort before you try to spot any time-based pattern.'}
+];
+function renderColGuide(){
+  const grid = document.getElementById('colGrid');
+  grid.innerHTML = '';
+  colItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'col-card';
+    card.innerHTML = `
+      <span class="cg-name">${item.name}</span>
+      <span class="cg-type ${item.type}">${item.typeLabel}</span>
+      <div class="cg-meaning">${item.meaning}</div>
+      <span class="cg-hint">tap for what's dirty about it →</span>
+      <div class="cg-dirty">🚩 ${item.dirty}</div>
+    `;
+    card.addEventListener('click', () => card.classList.toggle('revealed'));
+    grid.appendChild(card);
+  });
+}
+renderColGuide();
+
+/* ---------- LEVEL 4 – verified real sample rows from the actual dataset ---------- */
+const cafeCols = ['Transaction ID','Item','Quantity','Price Per Unit','Total Spent','Payment Method','Location','Transaction Date'];
+const cafeRows = [
+  ['TXN_1961373','Coffee','2','2','4','Credit Card','Takeaway','2023-09-08'],
+  ['TXN_4977031','Cake','4','3','12','Cash','In-store','2023-05-16'],
+  ['TXN_4271903','Cookie','4','1','ERROR','Credit Card','In-store','2023-07-19']
+];
+function renderCafeSampleTable(){
+  const table = document.getElementById('cafeSampleTable');
+  let thead = '<thead><tr>' + cafeCols.map(c => `<th>${c}</th>`).join('') + '</tr></thead>';
+  let tbody = '<tbody>' + cafeRows.map(r =>
+    '<tr>' + r.map(v => `<td${v === 'ERROR' ? ' class="err-cell"' : ''}>${v}</td>`).join('') + '</tr>'
+  ).join('') + '</tbody>';
+  table.innerHTML = thead + tbody;
+}
+renderCafeSampleTable();
+
+/* ---------- LEVEL 5 – the "can we trust this?" exercise ---------- */
+const taskItems = [
+  {
+    no:'1', title:"What's wrong with the data?", sub:'Inspect — find blanks, ERROR, and UNKNOWN',
+    body: `
+      <div class="find-row">
+        <span class="find-tag">blanks</span><span class="find-tag">"ERROR"</span><span class="find-tag">"UNKNOWN"</span>
+      </div>
+      <div class="task-note">Here's <b>COUNTIF</b>. Use it to count how many <b>ERROR</b> values are in the Item column:</div>
+      <div class="formula-label">Given formula</div>
+      <div class="formula-box">=COUNTIF(B2:B10001,"ERROR")</div>
+      <div class="your-turn">
+        <span class="yt-tag">Your turn</span>
+        Now modify it to count <b>UNKNOWN</b> instead. Then run both versions on Payment Method (column F) and Location (column G) — which column is dirtiest?
+      </div>
+      <div class="task-note">For blanks, here's one more given formula — this one counts empty Transaction Dates:</div>
+      <div class="formula-box">=COUNTBLANK(H2:H10001)</div>
+      <div class="your-turn">
+        <span class="yt-tag">Your turn</span>
+        Run COUNTBLANK on Item, Payment Method, and Location too. Which single column has the most total problems once you add up blanks + ERROR + UNKNOWN?
+      </div>
+    `
+  },
+  {
+    no:'2', title:'Are there duplicate transactions?', sub:'Identify — compare two counts',
+    body: `
+      <div class="task-note">Compare these two formulas, both run on the Transaction ID column:</div>
+      <div class="formula-label">Given formula 1 — counts every non-blank cell</div>
+      <div class="formula-box">=COUNTA(A2:A10001)</div>
+      <div class="formula-label">Given formula 2 — counts only distinct values</div>
+      <div class="formula-box">=COUNTUNIQUE(A2:A10001)</div>
+      <div class="task-note">If the two numbers <b>match</b>, every Transaction ID is unique — no duplicates. If they <b>don't match</b>, some ID appears more than once, meaning the same transaction got recorded twice.</div>
+      <div class="your-turn">
+        <span class="yt-tag">Your turn</span>
+        If the numbers differ, how would you find <i>which</i> rows are the duplicates, not just how many? (Hint: conditional formatting can highlight repeated values, or Data → Data cleanup → Remove duplicates will do it directly.)
+      </div>
+    `
+  }
+];
+function renderTaskGrid(){
+  const grid = document.getElementById('taskGrid');
+  grid.innerHTML = '';
+  taskItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'task-card';
+    card.dataset.t = item.no;
+    card.innerHTML = `
+      <div class="task-head">
+        <span class="task-no">${item.no}</span>
+        <div class="task-title-block">
+          <span class="task-title">${item.title}</span>
+          <span class="task-sub">${item.sub}</span>
+        </div>
+        <span class="task-hint">tap to open →</span>
+      </div>
+      <div class="task-detail">${item.body}</div>
+    `;
+    card.addEventListener('click', (e) => {
+      // don't toggle the card when clicking inside a stuck-toggle (it has its own handler)
+      if(e.target.classList.contains('stuck-toggle')) return;
+      card.classList.toggle('expanded');
+    });
+    grid.appendChild(card);
+  });
+
+  document.querySelectorAll('.stuck-toggle').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const target = document.getElementById(btn.dataset.target);
+      target.classList.toggle('open');
+    });
+  });
+}
+renderTaskGrid();
+
+/* ---------- LEVEL 6 – verified example rows: three genuine leave/label cases (no derived-column errors — those are handled separately in Step 2) ---------- */
+const cleanExampleRows = [
+  ['TXN_4717867','','5','3','15','','Takeaway','2023-07-28'],
+  ['TXN_7034554','Salad','2','5','10','UNKNOWN','UNKNOWN','2023-04-27'],
+  ['TXN_2602893','Smoothie','5','4','20','Credit Card','','2023-03-31']
+];
+function renderCleanExampleTable(){
+  const table = document.getElementById('cleanExampleTable');
+  if(!table) return;
+  let thead = '<thead><tr>' + cafeCols.map(c => `<th>${c}</th>`).join('') + '</tr></thead>';
+  let tbody = '<tbody>' + cleanExampleRows.map(r =>
+    '<tr>' + r.map(v => {
+      if(v === 'ERROR') return '<td class="err-cell">ERROR</td>';
+      if(v === 'UNKNOWN') return '<td class="unk-cell">UNKNOWN</td>';
+      if(v === '') return '<td class="blank-cell">(blank)</td>';
+      return `<td>${v}</td>`;
+    }).join('') + '</tr>'
+  ).join('') + '</tbody>';
+  table.innerHTML = thead + tbody;
+}
+renderCleanExampleTable();
+
+document.getElementById('revealCleanBtn').addEventListener('click', () => {
+  const wrap = document.getElementById('cleanWalkthrough');
+  const btn = document.getElementById('revealCleanBtn');
+  const isOpen = wrap.style.display === 'block';
+  wrap.style.display = isOpen ? 'none' : 'block';
+  btn.textContent = isOpen ? '🔍 Reveal the walkthrough' : '🔒 Hide the walkthrough';
+});
+
+/* ---------- LEVEL 7 – recap reveal ---------- */
+document.getElementById('revealSuccessBtn').addEventListener('click', () => {
+  const grid = document.getElementById('successGrid');
+  const btn = document.getElementById('revealSuccessBtn');
+  const isOpen = grid.style.display === 'grid';
+  if(isOpen){
+    grid.style.display = 'none';
+    btn.textContent = '🔓 What carries into Session 3';
+  } else {
+    grid.style.display = 'grid';
+    btn.textContent = '🎉 Got it →';
+  }
+});
+</script>
+
+</body>
+</html>

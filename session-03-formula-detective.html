@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 05 – Formula Detective</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fafaf6; --panel:#ffffff; --panel2:#f2f2ea; --line:#1c1c22; --ink:#14141a; --muted:#6c6c76;
+    --lime:#a4d925; --pink:#ff3d94; --blue:#2f7dff; --yellow:#ffc328; --lime-deep:#5c7a17; --red:#e0405a; --green:#2f9e6f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+  #hello{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;padding:24px;}
+  #hello .badge{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:6px 14px;border-radius:20px;}
+  #hello h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(32px,7vw,62px);margin:0;line-height:1.12;color:var(--ink);}
+  #hello h1 span{color:var(--pink);}
+  #hello p.sub{font-size:16px;color:var(--muted);max-width:48ch;margin:0;}
+  .start-btn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--ink);background:var(--lime);border:2px solid var(--ink);padding:16px 36px;border-radius:40px;cursor:pointer;box-shadow:0 6px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;}
+  .start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink);}
+  .start-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+
+  #app{display:none;max-width:1060px;margin:0 auto;padding:28px 22px 70px;}
+  .hud-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .hud-top .tag{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .xp-bar{flex:1;height:8px;background:var(--panel2);border-radius:6px;margin:0 16px;overflow:hidden;}
+  .xp-fill{height:100%;width:11%;background:linear-gradient(90deg,var(--blue),var(--lime));transition:width .3s ease;}
+  .xp-count{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);white-space:nowrap;}
+
+  .levels{display:flex;gap:6px;margin-bottom:22px;flex-wrap:wrap;}
+  .lvl{flex:1;min-width:82px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11px;text-align:center;padding:9px 4px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;transition:transform .12s ease, border-color .12s ease, color .12s ease;}
+  .lvl small{display:block;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:9px;letter-spacing:.08em;margin-bottom:3px;opacity:.8;}
+  .lvl:hover{transform:translateY(-2px);}
+  .lvl.active{color:var(--ink);}
+  .lvl[data-lvl="1"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="2"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="3"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl[data-lvl="4"].active{background:var(--yellow);border-color:var(--yellow);}
+  .lvl[data-lvl="5"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="6"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="7"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl[data-lvl="8"].active{background:var(--yellow);border-color:var(--yellow);}
+  .lvl[data-lvl="9"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+
+  .stage{background:var(--panel);border:2px solid var(--line);border-radius:20px;padding:30px 26px 34px;}
+  .page{display:none;}
+  .page.active{display:block;animation:pop .22s ease;}
+  @keyframes pop{from{opacity:0;transform:scale(.98);}to{opacity:1;transform:scale(1);}}
+  .page h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(22px,4vw,32px);margin:0 0 8px;}
+  .page .lede{font-size:15.5px;color:var(--muted);max-width:66ch;margin:0 0 20px;}
+  .section-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;}
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;}
+  .chip{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:11px 15px;font-size:14px;font-weight:600;}
+  .chip .ico{font-size:19px;}
+  .chip.warn{border-color:var(--red);background:rgba(224,64,90,0.08);}
+  .chip.check{border-color:var(--lime-deep);background:rgba(164,217,37,0.1);}
+
+  /* ---- six-step process flow ---- */
+  .process-flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:14px 0 8px;}
+  .pf-step{flex:1;min-width:120px;background:var(--panel2);border:2px solid var(--line);border-radius:14px;padding:12px 11px;position:relative;}
+  .pf-step .pf-no{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px;}
+  .pf-step .pf-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12.5px;display:block;line-height:1.25;}
+  .pf-arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px;padding:0 2px;flex:0 0 auto;}
+  .pf-step.here{border-color:var(--pink);background:rgba(255,61,148,0.08);}
+  .pf-step.here .pf-no{color:var(--pink);}
+  .pf-step.done{border-color:var(--lime-deep);background:rgba(164,217,37,0.08);}
+  .pf-step.done .pf-no{color:var(--lime-deep);}
+  .pf-badge{position:absolute;top:-11px;left:10px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:var(--pink);color:#fff;padding:3px 7px;border-radius:8px;}
+  .pf-badge.done{background:var(--lime-deep);}
+  @media (max-width:760px){ .process-flow{flex-direction:column;} .pf-arrow{transform:rotate(90deg);padding:2px 0;} }
+
+  /* ---- formula cheat cards ---- */
+  .cheat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;}
+  .cheat-card{border:2px solid var(--line);border-radius:14px;padding:15px 17px;cursor:pointer;transition:background .12s ease;}
+  .cheat-card.known{border-style:dashed;}
+  .cheat-card .cc-name{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;display:block;margin-bottom:4px;}
+  .cheat-card .cc-when{font-size:12.5px;color:var(--muted);}
+  .cheat-card .cc-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;display:block;}
+  .cheat-card .cc-ex{display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--ink);}
+  .cheat-card.revealed{background:var(--panel2);}
+  .cheat-card.revealed .cc-ex{display:block;}
+  .cheat-card.revealed .cc-hint{display:none;}
+  .cheat-card .cc-tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:6px;margin-bottom:6px;}
+  .cheat-card .cc-tag.old{background:rgba(108,108,118,0.14);color:var(--muted);}
+  .cheat-card .cc-tag.new{background:rgba(164,217,37,0.2);color:var(--lime-deep);}
+
+  /* ---- sample data table ---- */
+  .data-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;margin:6px 0;}
+  table.data-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px;min-width:600px;}
+  table.data-table th{background:var(--panel2);text-align:left;padding:9px 10px;border-bottom:2px solid var(--line);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+  table.data-table td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  table.data-table tr:nth-child(even) td{background:var(--panel2);}
+  table.data-table td.hit{background:rgba(164,217,37,0.22) !important;font-weight:700;}
+  table.data-table td.grand{background:var(--panel2) !important;font-weight:700;}
+  table.data-table th.grand{background:#e9ebe0 !important;}
+  .sample-tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin:6px 0 4px;}
+
+  /* ---- round card ---- */
+  .round-card{border:2px solid var(--line);border-radius:16px;padding:20px 22px;}
+  .round-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--pink);margin-bottom:8px;}
+  .round-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(18px,2.8vw,24px);line-height:1.32;margin:0 0 16px;}
+
+  .mission{background:rgba(255,195,40,0.18);border:1px solid var(--yellow);border-radius:14px;padding:14px 18px;margin-bottom:16px;}
+  .mission .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8a6a00;margin-bottom:6px;}
+  .mission p{margin:0;font-size:14.5px;font-weight:600;}
+
+  .cta-wrap{margin:18px 0 4px;}
+  .cta-btn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:var(--ink);background:var(--lime);border:2px solid var(--ink);padding:12px 24px;border-radius:40px;cursor:pointer;box-shadow:0 5px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;}
+  .cta-btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink);}
+  .cta-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+
+  .reveal{display:none;margin-top:18px;padding-top:18px;border-top:1px dashed var(--line);}
+  .reveal.open{display:block;}
+  .formula-label{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 5px;}
+  .formula-box{font-family:'JetBrains Mono',monospace;font-size:13.5px;background:var(--ink);color:#e8f7d0;border-radius:10px;padding:11px 15px;display:block;overflow-x:auto;white-space:pre;margin-bottom:10px;}
+  .answer-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(47,158,111,0.12);border:1px solid var(--green);color:var(--green);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;padding:8px 16px;border-radius:10px;margin-bottom:10px;}
+  .reveal-note{font-size:13px;color:var(--ink);line-height:1.55;margin:8px 0 0;}
+  .reveal-note b{color:var(--ink);}
+  .reveal-rule{margin-top:10px;padding:10px 13px;background:rgba(164,217,37,0.12);border:1px solid var(--lime-deep);border-radius:10px;font-size:13px;line-height:1.5;}
+  .reveal-rule b{color:var(--lime-deep);}
+
+  /* ---- pivot preview bars ---- */
+  .pivot-wrap{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+  .pivot-row{display:grid;grid-template-columns:130px 1fr 70px;align-items:center;gap:10px;}
+  .pivot-label{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--ink);}
+  .pivot-track{background:var(--panel2);border:1px solid var(--line);border-radius:8px;height:24px;overflow:hidden;}
+  .pivot-fill{height:100%;border-radius:7px 0 0 7px;transition:width .6s ease;}
+  .pivot-value{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);text-align:right;}
+
+  /* ---- pivot rule card ---- */
+  .rule-card{border:2px solid var(--line);border-radius:16px;padding:18px 20px;background:var(--panel2);margin-bottom:18px;}
+  .rule-card .rc-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--pink);margin-bottom:10px;}
+  .rule-card .rc-formula{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(15px,2.2vw,19px);line-height:1.5;margin:0 0 14px;}
+  .rule-card .rc-formula .slot{padding:2px 8px;border-radius:6px;}
+  .rule-card .rc-formula .slot.rows{background:rgba(47,125,255,0.16);color:var(--blue);}
+  .rule-card .rc-formula .slot.values{background:rgba(255,61,148,0.16);color:var(--pink);}
+  .rule-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;}
+  .rule-item{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;}
+  .rule-item .ri-trigger{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;color:var(--ink);display:block;margin-bottom:3px;}
+  .rule-item .ri-slot{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);}
+
+  /* ---- trap callouts ---- */
+  .trap{margin-top:14px;background:rgba(224,64,90,0.07);border:1px solid var(--red);border-radius:14px;padding:14px 18px;}
+  .trap .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-bottom:6px;}
+  .trap p{margin:0;font-size:13.5px;line-height:1.55;}
+
+  .discuss{margin-top:18px;background:rgba(164,217,37,0.14);border:1px solid var(--lime);border-radius:14px;padding:15px 18px;}
+  .discuss .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--lime-deep);margin-bottom:6px;}
+  .discuss p{margin:0;font-size:14.5px;font-weight:500;}
+
+  .sheets-cue{margin-top:16px;background:rgba(47,125,255,0.08);border:1px solid var(--blue);border-radius:14px;padding:14px 18px;}
+  .sheets-cue .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;}
+  .sheets-cue p{margin:0;font-size:14px;font-weight:500;}
+
+  .hook{margin-top:18px;background:rgba(47,125,255,0.08);border:1px solid var(--blue);border-radius:14px;padding:15px 18px;}
+  .hook .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;}
+  .hook p{margin:0;font-size:14.5px;font-weight:500;}
+
+  /* ---- decide cards ---- */
+  .decide-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;}
+  .decide-card{background:var(--panel2);border:2px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;transition:border-color .15s ease, background .15s ease, transform .1s ease;}
+  .decide-card:hover{transform:translateY(-2px);}
+  .decide-card.selected{border-color:var(--lime);background:rgba(164,217,37,0.14);}
+  .decide-card .dc-q{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13.5px;display:block;margin-bottom:4px;}
+  .decide-card .dc-a{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;}
+  .decide-card .dc-check{display:none;color:var(--lime-deep);margin-left:4px;}
+  .decide-card.selected .dc-check{display:inline;}
+
+  .recap-statement{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(19px,3.4vw,26px);line-height:1.35;margin:6px 0 22px;}
+  .recap-statement .hl-pink{color:var(--pink);}
+  .recap-statement .hl-blue{color:var(--blue);}
+  .recap-statement .hl-yellow{color:#8a6a00;}
+  .next-tag{margin-top:20px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;}
+  .next-tag b{color:var(--lime-deep);}
+
+  @media (max-width:560px){ .lvl{min-width:100%;} .pivot-row{grid-template-columns:100px 1fr 56px;} }
+</style>
+</head>
+<body>
+
+<div id="hello">
+  <div class="badge">Session 05</div>
+  <h1>Formula<br><span>Detective</span></h1>
+  <p class="sub">Same cafe file. Five formula questions, then two pivot table questions. Guess out loud, then run it live.</p>
+  <button class="start-btn" id="startBtn">Let's go ▶</button>
+</div>
+
+<div id="app">
+
+  <div class="hud-top">
+    <span class="tag">Progress</span>
+    <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+    <span class="xp-count" id="xpCount">LVL 1 / 9</span>
+  </div>
+
+  <div class="levels">
+    <div class="lvl active" data-lvl="1"><small>L1</small>Recap 🧹</div>
+    <div class="lvl" data-lvl="2"><small>L2</small>Toolkit 🧰</div>
+    <div class="lvl" data-lvl="3"><small>L3</small>Round 1 ☕</div>
+    <div class="lvl" data-lvl="4"><small>L4</small>Round 2 💵</div>
+    <div class="lvl" data-lvl="5"><small>L5</small>Round 3 🥤</div>
+    <div class="lvl" data-lvl="6"><small>L6</small>Round 4 🎯</div>
+    <div class="lvl" data-lvl="7"><small>L7</small>Pivot 1 📊</div>
+    <div class="lvl" data-lvl="8"><small>L8</small>Pivot 2 🧮</div>
+    <div class="lvl" data-lvl="9"><small>L9</small>Decide 🧭</div>
+  </div>
+
+  <div class="stage">
+
+    <!-- LEVEL 1 – RECAP -->
+    <div class="page active" id="page-1">
+      <h2>Quick recap — why we clean 🧹</h2>
+      <p class="lede">Two minutes before today's new formulas: where cleaning sits in the six steps, why it matters, and what you were actually checking for.</p>
+
+      <div class="section-tag">The six steps — steps 1-3 done, step 4 starts today</div>
+      <div class="process-flow" id="processFlow">
+        <div class="pf-step done"><span class="pf-badge done">✓ Done</span><span class="pf-no">STEP 1</span><span class="pf-title">Define the Problem</span></div>
+        <div class="pf-arrow">→</div>
+        <div class="pf-step done"><span class="pf-badge done">✓ Done</span><span class="pf-no">STEP 2</span><span class="pf-title">Data Collection</span></div>
+        <div class="pf-arrow">→</div>
+        <div class="pf-step done"><span class="pf-badge done">✓ Done</span><span class="pf-no">STEP 3</span><span class="pf-title">Data Cleaning</span></div>
+        <div class="pf-arrow">→</div>
+        <div class="pf-step here"><span class="pf-badge">Today</span><span class="pf-no">STEP 4</span><span class="pf-title">Analyze the Data</span></div>
+        <div class="pf-arrow">→</div>
+        <div class="pf-step"><span class="pf-no">STEP 5</span><span class="pf-title">Visualize Results</span></div>
+        <div class="pf-arrow">→</div>
+        <div class="pf-step"><span class="pf-no">STEP 6</span><span class="pf-title">Interpret &amp; Decide</span></div>
+      </div>
+
+      <div class="section-tag" style="margin-top:22px;">Why cleaning happens before analyzing</div>
+      <div class="chip-row">
+        <div class="chip warn"><span class="ico">⚠️</span>Duplicate rows inflate totals</div>
+        <div class="chip warn"><span class="ico">⚠️</span>Blank cells break SUM/AVERAGE</div>
+        <div class="chip warn"><span class="ico">⚠️</span>"ERROR"/"UNKNOWN" isn't a number</div>
+        <div class="chip warn"><span class="ico">⚠️</span>Text-numbers silently return 0</div>
+      </div>
+
+      <div class="hook">
+        <div class="dl">Today's flip</div>
+        <p>We're assuming the sheet is clean now. The question changes from "is this data broken?" to "what does this clean data actually say?" — that's Step 4, and that's the rest of today.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 – TOOLKIT -->
+    <div class="page" id="page-2">
+      <h2>Today's toolkit 🧰</h2>
+      <p class="lede">Session 2 gave you the inspection formulas — is the data broken? Today's formulas answer a different question: given clean data, what does it actually say? Tap each card.</p>
+
+      <div class="section-tag">Already know these — Session 2</div>
+      <div class="cheat-grid" id="cheatGridOld"></div>
+
+      <div class="section-tag" style="margin-top:22px;">New today — figure out when to use each one before we tell you</div>
+      <div class="chip-row">
+        <div class="chip"><span class="ico">📌</span>SUMIF</div>
+        <div class="chip"><span class="ico">📌</span>AVERAGEIF</div>
+        <div class="chip"><span class="ico">📌</span>SUMIFS</div>
+        <div class="chip"><span class="ico">📌</span>Pivot table</div>
+      </div>
+
+      <div class="sheets-cue">
+        <div class="dl">🖥️ How this session runs</div>
+        <p>Seven rounds. Each round shows a real business question. Say your answer out loud before anyone clicks reveal — then we run it live against the actual cafe sheet, not just this preview.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 – ROUND 1: COUNTIF -->
+    <div class="page" id="page-3">
+      <h2>Round 1 ☕</h2>
+      <p class="lede">A 14-row excerpt from the cafe file, to work the round on screen. The real formula runs live on all 10,000 rows.</p>
+
+      <div class="sample-tag">Sample excerpt — practice the formula shape here, then run it for real on the full sheet</div>
+      <div class="data-table-wrap"><table class="data-table" id="sampleTable"></table></div>
+
+      <div class="round-card" style="margin-top:18px;">
+        <div class="round-tag">Question</div>
+        <p class="round-q">How many orders were Coffee?</p>
+
+        <div class="mission">
+          <div class="dl">🎯 Your answer first</div>
+          <p>Which formula would you write, and on which column? Say it out loud.</p>
+        </div>
+
+        <div class="cta-wrap"><button class="cta-btn reveal-btn" data-target="reveal-r1" data-calc="r1">🔍 Reveal the formula</button></div>
+
+        <div class="reveal" id="reveal-r1">
+          <div class="formula-label">Formula — try it on the sample first, then the real sheet</div>
+          <div class="formula-box">=COUNTIF(B2:B15,"Coffee")</div>
+          <p class="reveal-note">Counts every row in the Item column that reads exactly "Coffee." Same formula you used in Session 2 — just pointed at a different value.</p>
+          <div class="reveal-rule"><b>Reach for this when:</b> you need a count of rows matching one exact condition.</div>
+          <p class="reveal-note"><b>Now run it for real:</b> change the range to <code>B2:B10001</code> in your copy of the actual cafe sheet and see what you get.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 – ROUND 2: SUMIF -->
+    <div class="page" id="page-4">
+      <h2>Round 2 💵</h2>
+      <p class="lede">COUNTIF tells you how many rows match. This one needs a total, not a count.</p>
+
+      <div class="round-card">
+        <div class="round-tag">Question</div>
+        <p class="round-q">Total revenue from Cash payments?</p>
+
+        <div class="mission">
+          <div class="dl">🎯 Your answer first</div>
+          <p>COUNTIF won't give you a dollar total — what's the formula that sums instead of counts?</p>
+        </div>
+
+        <div class="cta-wrap"><button class="cta-btn reveal-btn" data-target="reveal-r2" data-calc="r2">🔍 Reveal the formula</button></div>
+
+        <div class="reveal" id="reveal-r2">
+          <div class="formula-label">Formula — try it on the sample first, then the real sheet</div>
+          <div class="formula-box">=SUMIF(F2:F15,"Cash",E2:E15)</div>
+          <p class="reveal-note">Three arguments: <b>where to check</b> (Payment Method), <b>what to match</b> ("Cash"), <b>what to add up</b> (Total Spent). Order matters — the sum range comes last.</p>
+          <div class="reveal-rule"><b>Reach for this when:</b> you need a total filtered by one condition.</div>
+          <p class="reveal-note"><b>Now run it for real:</b> change every range to row 10001 in your copy of the actual cafe sheet and see what you get.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 5 – ROUND 3: AVERAGEIF -->
+    <div class="page" id="page-5">
+      <h2>Round 3 🥤</h2>
+      <p class="lede">Not a count, not a total — this question wants a typical value.</p>
+
+      <div class="round-card">
+        <div class="round-tag">Question</div>
+        <p class="round-q">Average Quantity per Smoothie order?</p>
+
+        <div class="mission">
+          <div class="dl">🎯 Your answer first</div>
+          <p>Same shape as SUMIF, but the question asks for an average — which function?</p>
+        </div>
+
+        <div class="cta-wrap"><button class="cta-btn reveal-btn" data-target="reveal-r3" data-calc="r3">🔍 Reveal the formula</button></div>
+
+        <div class="reveal" id="reveal-r3">
+          <div class="formula-label">Formula — try it on the sample first, then the real sheet</div>
+          <div class="formula-box">=AVERAGEIF(B2:B15,"Smoothie",C2:C15)</div>
+          <p class="reveal-note">Same three-argument shape as SUMIF — check column, match value, average column. If this were SUM instead of AVERAGE, you'd get total Smoothie units sold, not a typical order size.</p>
+          <div class="reveal-rule"><b>Reach for this when:</b> you need a typical value (a mean) filtered by one condition.</div>
+          <p class="reveal-note"><b>Now run it for real:</b> change every range to row 10001 in your copy of the actual cafe sheet and see what you get.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 6 – ROUND 4: SUMIFS -->
+    <div class="page" id="page-6">
+      <h2>Round 4 🎯</h2>
+      <p class="lede">This question has two conditions, not one. SUMIF only checks one column.</p>
+
+      <div class="round-card">
+        <div class="round-tag">Question</div>
+        <p class="round-q">Total revenue from Cash payments made In-store?</p>
+
+        <div class="mission">
+          <div class="dl">🎯 Your answer first</div>
+          <p>Payment Method = Cash <b>and</b> Location = In-store. What changes about the formula name and its argument order?</p>
+        </div>
+
+        <div class="cta-wrap"><button class="cta-btn reveal-btn" data-target="reveal-r4" data-calc="r4">🔍 Reveal the formula</button></div>
+
+        <div class="reveal" id="reveal-r4">
+          <div class="formula-label">Formula — try it on the sample first, then the real sheet</div>
+          <div class="formula-box">=SUMIFS(E2:E15,F2:F15,"Cash",G2:G15,"In-store")</div>
+          <p class="reveal-note">SUMIFS flips the order — <b>sum range comes first</b>, then condition pairs. Add a third pair and it works with a third condition too; SUMIF caps out at one.</p>
+          <div class="reveal-rule"><b>Reach for this when:</b> you need a total filtered by two or more conditions at once.</div>
+          <p class="reveal-note"><b>Now run it for real:</b> change every range to row 10001 in your copy of the actual cafe sheet and see what you get.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 7 – PIVOT 1: THE RULE + SINGLE FIELD -->
+    <div class="page" id="page-7">
+      <h2>Pivot table, part 1 📊</h2>
+      <p class="lede">No new formula — a different tool entirely. Learn the translation rule once, and it works for almost any "totals by category" question.</p>
+
+      <div class="mission">
+        <div class="dl">🎯 Feel the pain first</div>
+        <p>You now know how to get total revenue for one item with SUMIF. The cafe menu has 5 items — how many separate SUMIF formulas would you need to get all 5 totals? Say the number out loud.</p>
+      </div>
+
+      <div class="hook">
+        <div class="dl">That's the problem</div>
+        <p>One SUMIF per item, retyped five times, one for every new item added to the menu. A pivot table gets all 5 totals in one setup — no retyping, no matter how many items there are.</p>
+      </div>
+
+      <div class="rule-card">
+        <div class="rc-tag">The rule</div>
+        <p class="rc-formula">[aggregation] of [<span class="slot values">number</span>], for each [<span class="slot rows">category</span>]</p>
+        <div class="rule-grid">
+          <div class="rule-item"><span class="ri-trigger">"per," "by," "each," "broken down by"</span><span class="ri-slot">→ that field goes in Rows</span></div>
+          <div class="rule-item"><span class="ri-trigger">"total"</span><span class="ri-slot">→ Values, set to SUM</span></div>
+          <div class="rule-item"><span class="ri-trigger">"how many," "count of"</span><span class="ri-slot">→ Values, set to COUNT</span></div>
+          <div class="rule-item"><span class="ri-trigger">"average"</span><span class="ri-slot">→ Values, set to AVERAGE</span></div>
+        </div>
+      </div>
+
+      <div class="round-card">
+        <div class="round-tag">Question</div>
+        <p class="round-q">Total revenue for each item?</p>
+
+        <div class="mission">
+          <div class="dl">🎯 Your answer first</div>
+          <p>Circle the category word and the number+aggregation word in that question. Which field goes in Rows? Which goes in Values, and set to what?</p>
+        </div>
+
+        <div class="cta-wrap"><button class="cta-btn reveal-btn" data-target="reveal-p1" data-calc="p1">🔍 Reveal the setup</button></div>
+
+        <div class="reveal" id="reveal-p1">
+          <div class="formula-label">Translation — build this on the real sheet</div>
+          <div class="formula-box">Rows = Item          Values = SUM of Total Spent</div>
+          <p class="reveal-note" style="margin-top:0;">"each item" → category → Rows. "Total revenue" → number + aggregation word → Values, set to SUM. No formula typed — Insert → Pivot table, then drag those two fields into place.</p>
+          <p class="reveal-note"><b>Now build it for real:</b> Insert → Pivot table on the full cafe sheet, drag Item into Rows and Total Spent into Values. See which item actually wins.</p>
+        </div>
+      </div>
+
+      <div class="trap">
+        <div class="dl">⚠️ Trap #1</div>
+        <p>Sheets guesses the aggregation for you — numeric columns default to SUM, text columns default to COUNT. If you drag a text field into Values by accident and get a COUNT instead of a SUM, that's normal, not broken. Check the dropdown next to the field.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 8 – PIVOT 2: CROSS-TAB -->
+    <div class="page" id="page-8">
+      <h2>Pivot table, part 2 🧮</h2>
+      <p class="lede">What if the question has two categories instead of one? That's what the Columns slot is for.</p>
+
+      <div class="round-card">
+        <div class="round-tag">Question</div>
+        <p class="round-q">Revenue for each item, broken down by payment method?</p>
+
+        <div class="mission">
+          <div class="dl">🎯 Your answer first</div>
+          <p>Two category words this time — "each item" and "by payment method." One goes in Rows, one goes in Columns. Which is which, and does it actually matter?</p>
+        </div>
+
+        <div class="cta-wrap"><button class="cta-btn reveal-btn" data-target="reveal-p2" data-calc="p2">🔍 Reveal the setup</button></div>
+
+        <div class="reveal" id="reveal-p2">
+          <div class="formula-label">Translation — build this on the real sheet</div>
+          <div class="formula-box">Rows = Item     Columns = Payment Method     Values = SUM of Total Spent</div>
+          <p class="reveal-note" style="margin-top:0;">Item stays in Rows, Payment Method moves to Columns — same fields as before, just one more slot filled. Same numbers you'd get from several separate SUMIFS formulas, laid out as a grid instead of a list.</p>
+          <p class="reveal-note"><b>Now build it for real:</b> add Payment Method to Columns on the pivot you just built. Watch the single list split into a grid.</p>
+        </div>
+      </div>
+
+      <div class="trap">
+        <div class="dl">⚠️ Trap #2</div>
+        <p>Rows vs. Columns gives you the exact same numbers — it's the same data, just rotated. The only real reason to pick one over the other is readability: a field with many categories (10+) reads better as Rows (a scrollable list) than as Columns (which spreads off-screen).</p>
+      </div>
+
+      <div class="discuss">
+        <div class="dl">Discuss</div>
+        <p>This pivot answers what would've taken five separate SUMIFS formulas — one per payment-method-and-item pair. Which would you rather build under time pressure?</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 9 – DECIDE / RECAP -->
+    <div class="page" id="page-9">
+      <h2>Which one, when? 🧭</h2>
+      <p class="lede">Seven questions, five tools. Match each to when you'd reach for it — tap to lock in your answer, then compare with the room.</p>
+
+      <div class="decide-grid" id="decideGrid"></div>
+
+      <p class="recap-statement" style="margin-top:26px;">One condition, one number — <span class="hl-blue">SUMIF / COUNTIF / AVERAGEIF</span>. Two or more conditions — <span class="hl-pink">SUMIFS</span>. Every category at once, one or two groupings — <span class="hl-yellow">pivot table</span>.</p>
+
+      <div class="next-tag">Next session — SQL, part one. The same "group and total" idea, written as a query instead of a formula or a pivot table.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('hello').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+});
+
+document.querySelectorAll('.lvl').forEach(l => {
+  l.addEventListener('click', () => activateLevel(l.dataset.lvl));
+});
+function activateLevel(id){
+  const total = document.querySelectorAll('.lvl').length;
+  document.querySelectorAll('.lvl').forEach(l => l.classList.toggle('active', l.dataset.lvl === id));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
+  document.getElementById('xpFill').style.width = (id / total * 100) + '%';
+  document.getElementById('xpCount').textContent = 'LVL ' + id + ' / ' + total;
+}
+
+/* ---------- LEVEL 2 – cheat cards ---------- */
+const oldFormulas = [
+  {name:'COUNTIF', when:'Count rows matching one condition.', ex:'=COUNTIF(B2:B10001,"ERROR") — how many Item cells say ERROR.'},
+  {name:'COUNTA', when:'Count non-blank cells.', ex:'=COUNTA(A2:A10001) — how many Transaction IDs exist.'},
+  {name:'COUNTBLANK', when:'Count empty cells.', ex:'=COUNTBLANK(H2:H10001) — how many dates are missing.'},
+  {name:'COUNTUNIQUE', when:'Count distinct values.', ex:'=COUNTUNIQUE(A2:A10001) — compare to COUNTA to catch duplicates.'}
+];
+const newFormulas = [
+  {name:'SUMIF', when:'Total, one condition.', ex:'=SUMIF(F2:F15,"Cash",E2:E15) — total revenue where Payment Method is Cash.'},
+  {name:'AVERAGEIF', when:'Average, one condition.', ex:'=AVERAGEIF(B2:B15,"Smoothie",C2:C15) — average Quantity for Smoothie orders.'},
+  {name:'SUMIFS', when:'Total, two+ conditions.', ex:'=SUMIFS(E2:E15,F2:F15,"Cash",G2:G15,"In-store") — Cash AND In-store, at once.'},
+  {name:'Pivot table', when:'Every category, one or two groupings, no formula.', ex:'Drag Item to Rows, Payment Method to Columns, Total Spent to Values — a full grid in three drags.'}
+];
+function renderCheatGrid(items, gridId, isNew){
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  items.forEach(f => {
+    const card = document.createElement('div');
+    card.className = 'cheat-card' + (isNew ? '' : ' known');
+    card.innerHTML = '<span class="cc-tag ' + (isNew ? 'new' : 'old') + '">' + (isNew ? 'new' : 'session 2') + '</span>' +
+      '<span class="cc-name">' + f.name + '</span>' +
+      '<div class="cc-when">' + f.when + '</div>' +
+      '<span class="cc-hint">tap for example →</span>' +
+      '<div class="cc-ex">' + f.ex + '</div>';
+    card.addEventListener('click', () => card.classList.toggle('revealed'));
+    grid.appendChild(card);
+  });
+}
+renderCheatGrid(oldFormulas, 'cheatGridOld', false);
+
+/* ---------- LEVEL 3 – sample data (14-row excerpt, used by every round) ---------- */
+const sampleCols = ['Transaction ID','Item','Quantity','Price Per Unit','Total Spent','Payment Method','Location'];
+const sampleRows = [
+  ['TXN_101','Coffee',2,3,6,'Cash','In-store'],
+  ['TXN_102','Cake',1,4,4,'Credit Card','Takeaway'],
+  ['TXN_103','Coffee',3,3,9,'Cash','Takeaway'],
+  ['TXN_104','Smoothie',2,5,10,'Credit Card','In-store'],
+  ['TXN_105','Cookie',4,2,8,'Cash','In-store'],
+  ['TXN_106','Coffee',1,3,3,'Credit Card','In-store'],
+  ['TXN_107','Salad',2,6,12,'Cash','Takeaway'],
+  ['TXN_108','Smoothie',3,5,15,'Cash','In-store'],
+  ['TXN_109','Cake',2,4,8,'Credit Card','Takeaway'],
+  ['TXN_110','Coffee',2,3,6,'Cash','In-store'],
+  ['TXN_111','Cookie',1,2,2,'Credit Card','Takeaway'],
+  ['TXN_112','Smoothie',1,5,5,'Cash','Takeaway'],
+  ['TXN_113','Salad',1,6,6,'Credit Card','In-store'],
+  ['TXN_114','Coffee',4,3,12,'Cash','In-store']
+];
+function renderSampleTable(highlightFn){
+  const table = document.getElementById('sampleTable');
+  let thead = '<thead><tr>' + sampleCols.map(c => '<th>' + c + '</th>').join('') + '</tr></thead>';
+  let tbody = '<tbody>' + sampleRows.map(r => {
+    const hit = highlightFn ? highlightFn(r) : false;
+    return '<tr>' + r.map(v => '<td' + (hit ? ' class="hit"' : '') + '>' + v + '</td>').join('') + '</tr>';
+  }).join('') + '</tbody>';
+  table.innerHTML = thead + tbody;
+}
+renderSampleTable();
+
+/* ---------- reveal + live calculation for each round ---------- */
+document.querySelectorAll('.reveal-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = document.getElementById(btn.dataset.target);
+    const isOpen = target.classList.contains('open');
+
+    if(!isOpen){
+      target.classList.add('open');
+      btn.textContent = '🔒 Hide';
+    } else {
+      target.classList.remove('open');
+      btn.textContent = btn.dataset.calc === 'p1' || btn.dataset.calc === 'p2' ? '🔍 Reveal the setup' : '🔍 Reveal the formula';
+    }
+  });
+});
+
+/* ---------- LEVEL 9 – decide grid ---------- */
+const decideItems = [
+  {q:'One condition, need a count', a:'COUNTIF'},
+  {q:'One condition, need a total', a:'SUMIF'},
+  {q:'One condition, need a typical value', a:'AVERAGEIF'},
+  {q:'Two or more conditions, need a total', a:'SUMIFS'},
+  {q:'Every category, one grouping, fast', a:'Pivot table'},
+  {q:'Every category, two groupings at once', a:'Pivot table (Rows + Columns)'}
+];
+function renderDecideGrid(){
+  const grid = document.getElementById('decideGrid');
+  grid.innerHTML = '';
+  decideItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'decide-card';
+    card.innerHTML = '<span class="dc-q">' + item.q + '</span><span class="dc-a">' + item.a + '<span class="dc-check">✓</span></span>';
+    card.addEventListener('click', () => card.classList.toggle('selected'));
+    grid.appendChild(card);
+  });
+}
+renderDecideGrid();
+</script>
+
+</body>
+</html>

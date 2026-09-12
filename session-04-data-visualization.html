@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 04 – Seeing the Data</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* palette – bg #fafaf6 · panel #ffffff · ink #1c1c22 · lime #a4d925 · pink #ff3d94 · blue #2f7dff · yellow #ffc328
+     type – Space Grotesk (display) · Inter (body) · JetBrains Mono (HUD / labels)
+     kept identical to Sessions 01-02 on purpose – same field-notebook system across all sessions */
+  :root{
+    --bg:#fafaf6; --panel:#ffffff; --panel2:#f2f2ea; --line:#1c1c22; --ink:#14141a; --muted:#6c6c76;
+    --lime:#a4d925; --pink:#ff3d94; --blue:#2f7dff; --yellow:#ffc328; --lime-deep:#5c7a17; --red:#e0405a; --gray:#8a8a94;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+  #hello{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;padding:24px;}
+  #hello .badge{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:6px 14px;border-radius:20px;}
+  #hello h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(32px,7vw,60px);margin:0;line-height:1.1;color:var(--ink);}
+  #hello h1 span{color:var(--pink);}
+  #hello p.sub{font-size:16px;color:var(--muted);max-width:48ch;margin:0;}
+  .start-btn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--ink);background:var(--lime);border:2px solid var(--ink);padding:16px 36px;border-radius:40px;cursor:pointer;box-shadow:0 6px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;}
+  .start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink);}
+  .start-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+
+  #app{display:none;max-width:1040px;margin:0 auto;padding:28px 22px 70px;}
+  .hud-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .hud-top .tag{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .xp-bar{flex:1;height:8px;background:var(--panel2);border-radius:6px;margin:0 16px;overflow:hidden;}
+  .xp-fill{height:100%;width:16%;background:linear-gradient(90deg,var(--blue),var(--lime));transition:width .3s ease;}
+  .xp-count{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);white-space:nowrap;}
+
+  .levels{display:flex;gap:9px;margin-bottom:22px;flex-wrap:wrap;}
+  .lvl{flex:1;min-width:130px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13.5px;text-align:center;padding:13px 8px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;transition:transform .12s ease, border-color .12s ease, color .12s ease;}
+  .lvl small{display:block;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:10px;letter-spacing:.08em;margin-bottom:3px;opacity:.8;}
+  .lvl:hover{transform:translateY(-2px);}
+  .lvl.active{color:var(--ink);}
+  .lvl[data-lvl="1"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="2"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="3"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl[data-lvl="4"].active{background:var(--yellow);border-color:var(--yellow);}
+  .lvl[data-lvl="5"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="6"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+
+  .stage{background:var(--panel);border:2px solid var(--line);border-radius:20px;padding:30px 26px 34px;}
+  .page{display:none;}
+  .page.active{display:block;animation:pop .22s ease;}
+  @keyframes pop{from{opacity:0;transform:scale(.98);}to{opacity:1;transform:scale(1);}}
+  .page h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(22px,4vw,32px);margin:0 0 8px;}
+  .page .lede{font-size:15.5px;color:var(--muted);max-width:68ch;margin:0 0 20px;}
+  .section-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;}
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;}
+  .chip{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:11px 15px;font-size:14px;font-weight:600;}
+  .chip .ico{font-size:19px;}
+
+  .hook{margin-top:18px;background:rgba(47,125,255,0.08);border:1px solid var(--blue);border-radius:14px;padding:15px 18px;}
+  .hook .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;}
+  .hook p{margin:0;font-size:14.5px;font-weight:500;}
+
+  .mission{background:rgba(255,195,40,0.18);border:1px solid var(--yellow);border-radius:14px;padding:14px 18px;margin-bottom:16px;}
+  .mission .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8a6a00;margin-bottom:6px;}
+  .mission p{margin:0;font-size:14.5px;font-weight:600;}
+
+  .discuss{margin-top:18px;background:rgba(164,217,37,0.14);border:1px solid var(--lime);border-radius:14px;padding:15px 18px;}
+  .discuss .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--lime-deep);margin-bottom:6px;}
+  .discuss p{margin:0;font-size:14.5px;font-weight:500;}
+
+  .note-tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin:6px 0 4px;}
+
+  /* ---- data table ---- */
+  .data-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;margin:6px 0;}
+  table.data-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12.5px;min-width:480px;}
+  table.data-table th{background:var(--panel2);text-align:left;padding:9px 10px;border-bottom:2px solid var(--line);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+  table.data-table td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  table.data-table tr:nth-child(even) td{background:var(--panel2);}
+
+  /* ---- toggle row (table vs chart, level 1) ---- */
+  .toggle-row{display:flex;gap:8px;margin-bottom:18px;}
+  .toggle-btn{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:13px;padding:9px 16px;border-radius:20px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer;}
+  .toggle-btn.active{background:var(--lime);color:var(--ink);border-color:var(--lime);}
+  .toggle-btn:focus-visible{outline:2px solid var(--yellow);outline-offset:2px;}
+
+  /* ---- generic bar chart ---- */
+  .bar-chart{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+  .bar-row{display:grid;grid-template-columns:150px 1fr 54px;align-items:center;gap:10px;}
+  .bar-label{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--ink);}
+  .bar-track{background:var(--panel2);border:1px solid var(--line);border-radius:8px;height:24px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:7px 0 0 7px;transition:width .6s ease;}
+  .bar-value{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);text-align:right;}
+  .bar-fill.highlight{background:var(--pink) !important;}
+  .bar-fill.dim{background:var(--panel2) !important;border-right:1px solid var(--line);}
+
+  /* ---- Level 3: perception cards ---- */
+  .perc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;}
+  .perc-card{border:2px solid var(--line);border-radius:16px;padding:18px 16px;text-align:center;cursor:pointer;transition:background .12s ease, transform .1s ease;background:var(--panel2);}
+  .perc-card:hover{transform:translateY(-2px);}
+  .perc-card .pc-ico{font-size:36px;display:block;margin-bottom:8px;}
+  .perc-card .pc-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;display:block;margin-bottom:6px;}
+  .perc-card .pc-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+  .perc-card .pc-detail{display:none;font-size:12.5px;color:var(--ink);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);line-height:1.5;text-align:left;}
+  .perc-card.revealed{background:var(--panel);border-color:var(--pink);}
+  .perc-card.revealed .pc-detail{display:block;}
+  .perc-card.revealed .pc-hint{display:none;}
+
+  /* ---- Level 3 modal ---- */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(20,20,26,0.55);z-index:50;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:var(--panel);border:2px solid var(--line);border-radius:20px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;padding:26px 26px 28px;position:relative;}
+  .modal-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:2px solid var(--line);background:var(--panel2);cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .modal-close:focus-visible{outline:2px solid var(--yellow);outline-offset:2px;}
+  .modal-box h3{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;margin:0 0 6px;padding-right:30px;}
+  .modal-box .modal-sub{font-size:13.5px;color:var(--muted);margin:0 0 16px;}
+  .modal-img-row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;}
+  .modal-img-row img{max-width:150px;width:100%;height:auto;border-radius:10px;border:1px solid var(--line);}
+  .modal-img-row.single img{max-width:100%;}
+  .modal-img-row .img-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-align:center;display:block;margin-top:6px;}
+  .modal-toggle-row{display:flex;justify-content:center;gap:8px;margin-bottom:16px;}
+  .modal-note{font-size:13.5px;color:var(--ink);line-height:1.55;background:var(--panel2);border-radius:12px;padding:12px 14px;}
+  .modal-note b{color:var(--ink);}
+  .modal-source{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:10px;text-align:center;}
+  .modal-source a{color:var(--muted);}
+
+  /* ---- Level 4: chart type cards ---- */
+  .chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;}
+  .chart-card{border:2px solid var(--line);border-left:6px solid var(--ink);border-radius:16px;padding:16px 18px;cursor:pointer;transition:background .12s ease;background:var(--panel2);}
+  .chart-card[data-chart="bar"]{border-left-color:var(--blue);}
+  .chart-card[data-chart="line"]{border-left-color:var(--lime-deep);}
+  .chart-card[data-chart="pie"]{border-left-color:var(--pink);}
+  .chart-card[data-chart="scatter"]{border-left-color:var(--yellow);}
+  .chart-card .cc-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;display:block;margin-bottom:3px;}
+  .chart-card .cc-job{font-size:12.5px;color:var(--muted);display:block;margin-bottom:8px;}
+  .chart-card .cc-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+  .chart-card.expanded{background:var(--panel);}
+  .chart-card.expanded .cc-hint{display:none;}
+  .chart-card .cc-detail{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+  .chart-card.expanded .cc-detail{display:block;}
+  .cc-question{background:rgba(47,125,255,0.08);border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:600;margin-bottom:12px;}
+  .cc-borrowed{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin-top:8px;}
+
+  .mini-line-wrap svg, .mini-scatter-wrap svg{width:100%;height:auto;display:block;}
+  .mini-pie-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .pie-circle{width:120px;height:120px;border-radius:50%;flex-shrink:0;}
+  .pie-legend{display:flex;flex-direction:column;gap:4px;font-family:'JetBrains Mono',monospace;font-size:11px;}
+  .pie-legend .pl-row{display:flex;align-items:center;gap:6px;}
+  .pie-legend .pl-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+
+  .match-round{margin-top:22px;}
+  .match-item{border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:8px;cursor:pointer;background:var(--panel2);}
+  .match-item .mi-q{font-size:13.5px;font-weight:600;}
+  .match-item .mi-a{display:none;font-size:12.5px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);}
+  .match-item.open{background:var(--panel);border-color:var(--lime);}
+  .match-item.open .mi-a{display:block;}
+
+  /* ---- Level 5: wrong choice ---- */
+  .cta-wrap{text-align:center;margin:18px 0;}
+  .cta-btn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:var(--ink);background:var(--lime);border:2px solid var(--ink);padding:12px 26px;border-radius:40px;cursor:pointer;box-shadow:0 5px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;}
+  .cta-btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink);}
+  .cta-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+
+  .before-after{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;}
+  @media (max-width:640px){ .before-after{grid-template-columns:1fr;} }
+  .ba-panel{border:2px solid var(--line);border-radius:14px;padding:16px;}
+  .ba-panel .ba-tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;}
+  .ba-panel.bad .ba-tag{color:var(--red);}
+  .ba-panel.good .ba-tag{color:var(--lime-deep);}
+
+  /* ---- recap ---- */
+  .recap-statement{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(19px,3.4vw,26px);line-height:1.35;margin:6px 0 22px;}
+  .recap-statement .hl-blue{color:var(--blue);}
+  .recap-statement .hl-pink{color:var(--pink);}
+  .next-tag{margin-top:20px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;}
+  .next-tag b{color:var(--lime-deep);}
+
+  @media (max-width:560px){ .lvl{min-width:100%;} }
+</style>
+</head>
+<body>
+
+<div id="hello">
+  <div class="badge">Session 04</div>
+  <h1>Seeing the <span>data</span></h1>
+  <p class="sub">Same job data from Homework 4 — but this time, you're showing it to your boss.</p>
+  <button class="start-btn" id="startBtn">Let's go ▶</button>
+</div>
+
+<div id="app">
+
+  <div class="hud-top">
+    <span class="tag">Progress</span>
+    <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+    <span class="xp-count" id="xpCount">LVL 1 / 6</span>
+  </div>
+
+  <div class="levels">
+    <div class="lvl active" data-lvl="1"><small>L1</small>The Boss 💼</div>
+    <div class="lvl" data-lvl="2"><small>L2</small>Why Viz? 📖</div>
+    <div class="lvl" data-lvl="3"><small>L3</small>Color & Shape 🦺</div>
+    <div class="lvl" data-lvl="4"><small>L4</small>4 Charts 📊</div>
+    <div class="lvl" data-lvl="5"><small>L5</small>Wrong Choice ⚠️</div>
+    <div class="lvl" data-lvl="6"><small>L6</small>Recap 🏁</div>
+  </div>
+
+  <div class="stage">
+
+    <!-- LEVEL 1 – THE SCENARIO -->
+    <div class="page active" id="page-1">
+      <h2>Your boss wants an answer 💼</h2>
+      <p class="lede">You work at a headhunter firm. Your boss just asked two questions about the Homework 4 job postings: which roles have the most openings, and which industries pay the most. Here's the data you'd hand over.</p>
+
+      <div class="toggle-row">
+        <button class="toggle-btn active" data-view="table">📄 As a table</button>
+        <button class="toggle-btn" data-view="chart">📊 As a chart</button>
+      </div>
+
+      <div id="viewTable">
+        <div class="data-table-wrap"><table class="data-table" id="jobTable"></table></div>
+        <div class="hook">
+          <div class="dl">Try it</div>
+          <p>Look at the table for 10 seconds. Which role has the most postings? Which industry pays best? Not easy to say at a glance.</p>
+        </div>
+      </div>
+
+      <div id="viewChart" style="display:none;">
+        <div class="section-tag">Postings by role</div>
+        <div class="bar-chart" id="titleChart"></div>
+        <div class="section-tag" style="margin-top:20px;">Average pay by industry</div>
+        <div class="bar-chart" id="industryChart"></div>
+        <div class="hook">
+          <div class="dl">Same data, same 10 seconds</div>
+          <p>Now which role has the most postings? Which industry pays best? That's the whole pitch for data visualization in one comparison.</p>
+        </div>
+      </div>
+
+      <div class="discuss">
+        <div class="dl">Discuss</div>
+        <p>If you only had 30 seconds in front of your boss, which version would you open with — and why?</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 – WHAT IS DATA VIZ -->
+    <div class="page" id="page-2">
+      <h2>What is data visualization? 📖</h2>
+      <p class="lede">Turning data into a chart so a pattern jumps out, a decision gets easier, and a story lands with whoever's listening — your boss, a client, the class.</p>
+
+      <div class="chip-row">
+        <div class="chip"><span class="ico">🔍</span>Find the pattern</div>
+        <div class="chip"><span class="ico">✅</span>Support a decision</div>
+        <div class="chip"><span class="ico">🗣️</span>Tell the story</div>
+      </div>
+
+      <div class="mission">
+        <div class="dl">🎯 One line to remember</div>
+        <p>A table is for records. A chart is for meaning.</p>
+      </div>
+
+      <div class="hook">
+        <div class="dl">Where this fits in the six steps</div>
+        <p>Define → Collect → Clean → Analyze → <b>Visualize</b> → Interpret &amp; Decide. You've already done the first four on Homework 4's raw data. This session is step five — turning your cleaned numbers into something someone else can actually read.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 – COLOR & SHAPE -->
+    <div class="page" id="page-3">
+      <h2>How you already read color and shape 🦺</h2>
+      <p class="lede">Before picking chart types, notice something you already know how to do. Tap each card to open it up — you're reading these signals every day without training.</p>
+
+      <div class="perc-grid" id="percGrid"></div>
+
+      <div class="discuss">
+        <div class="dl">Discuss</div>
+        <p>Think of one more red-means-danger or yellow-means-caution example from your own day. Does size ever do the same job as color in it?</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 – FOUR CHART TYPES -->
+    <div class="page" id="page-4">
+      <h2>Four charts, four jobs 📊</h2>
+      <p class="lede">Every chart type is built to answer one kind of question well, and the others badly. Tap each to see the question it answers, using the group's own data.</p>
+
+      <div class="chart-grid" id="chartGrid"></div>
+
+      <div class="section-tag" style="margin-top:24px;">Your turn — match the chart</div>
+      <div class="match-round" id="matchRound"></div>
+    </div>
+
+    <!-- LEVEL 5 – RIGHT CHART, WRONG CHOICE -->
+    <div class="page" id="page-5">
+      <h2>Right chart type, wrong choice ⚠️</h2>
+      <p class="lede">Level 4 taught you what each chart type is built for. Here are two cases where someone picked a technically valid chart type — and it still didn't work.</p>
+
+      <div class="section-tag">Case 1 — Too many pie slices</div>
+      <div class="mission">
+        <div class="dl">🎯 The question</div>
+        <p>What share of job postings comes from each industry sector?</p>
+      </div>
+
+      <div class="cta-wrap">
+        <button class="cta-btn" id="revealSlicesBtn">🥧 Show me the pie chart</button>
+      </div>
+
+      <div id="sliceReveal" style="display:none;">
+        <div class="before-after">
+          <div class="ba-panel bad">
+            <div class="ba-tag">⚠️ 9 sectors, one pie</div>
+            <div class="mini-pie-wrap" id="pieBad"></div>
+            <div class="note-tag" style="margin-top:10px;">Technically the right chart type — it is "part of a whole." Nine slices in, you can't tell which is bigger without reading every label.</div>
+          </div>
+          <div class="ba-panel good">
+            <div class="ba-tag">✅ Fixed: bar, sorted</div>
+            <div class="bar-chart" id="pieFixBar"></div>
+            <div class="note-tag" style="margin-top:10px;">Same data. Sort a bar chart top to bottom and the biggest sector is obvious in one glance — no legend-matching required.</div>
+          </div>
+        </div>
+
+        <div class="hook" style="margin-top:18px;">
+          <div class="dl">The rule this proves</div>
+          <p>Pie charts work at 3–4 slices. Past that, group the small ones into "Other," or just switch to a bar chart. Picking a valid chart type isn't the same as picking the right one for how much data you actually have.</p>
+        </div>
+      </div>
+
+      <div class="section-tag" style="margin-top:30px;">Case 2 — Bar chart for a stock price trend</div>
+      <div class="mission">
+        <div class="dl">🎯 The question</div>
+        <p>Is this stock's closing price trending up or down over the last 15 trading days?</p>
+      </div>
+
+      <div class="cta-wrap">
+        <button class="cta-btn" id="revealStockBtn">📊 Show me the bar chart</button>
+      </div>
+
+      <div id="stockReveal" style="display:none;">
+        <div class="before-after">
+          <div class="ba-panel bad">
+            <div class="ba-tag">⚠️ Bar chart, 15 trading days</div>
+            <div class="bar-chart" id="stockBadBar"></div>
+            <div class="note-tag" style="margin-top:10px;">Technically the right chart type — bars do compare values. But each day sits in its own separate block, so the trend gets chopped up instead of connected.</div>
+          </div>
+          <div class="ba-panel good">
+            <div class="ba-tag">✅ Fixed: line chart</div>
+            <div class="mini-line-wrap" id="stockGoodLine"></div>
+            <div class="note-tag" style="margin-top:10px;">Same 15 days. A line connects each day to the next, so the climb — and any dip — is visible in one glance instead of bar-by-bar comparison.</div>
+          </div>
+        </div>
+
+        <div class="hook" style="margin-top:18px;">
+          <div class="dl">The rule this proves</div>
+          <p>Bar charts compare separate categories. Once your x-axis is time — days, months, years — use a line chart instead. It shows the connection between one point and the next that bars can't.</p>
+        </div>
+      </div>
+
+      <div class="discuss" style="margin-top:22px;">
+        <div class="dl">Discuss</div>
+        <p>Both cases picked a chart type that's "allowed" for that kind of question. What actually went wrong in each — and how would you catch it before showing it to your boss?</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 6 – RECAP -->
+    <div class="page" id="page-6">
+      <h2>That's today 🏁</h2>
+
+      <p class="recap-statement">The right chart for the <span class="hl-blue">question</span> you're answering — not the chart that just looks <span class="hl-pink">nicest</span>.</p>
+
+      <div class="chip-row">
+        <div class="chip"><span class="ico">📊</span>Bar → compare</div>
+        <div class="chip"><span class="ico">📈</span>Line → trend</div>
+        <div class="chip"><span class="ico">🥧</span>Pie → share, sparingly</div>
+        <div class="chip"><span class="ico">⚪</span>Scatter → relationship</div>
+      </div>
+
+      <div class="hook" style="margin-top:20px;">
+        <div class="dl">Carries into next session</div>
+        <p>Which chart type you'd pick for your own Homework 4 question, and why. You'll build it for real in Tableau in a couple of sessions.</p>
+      </div>
+
+      <div class="next-tag">Next session — we build these live in Tableau Public.</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay" id="percModal">
+  <div class="modal-box" id="percModalBox">
+    <button class="modal-close" id="percModalClose" aria-label="Close">✕</button>
+    <div id="percModalContent"></div>
+  </div>
+</div>
+
+<script>
+const imgData = {
+  toilet_sign: 'https://upload.wikimedia.org/wikipedia/commons/9/9e/Toilet_paper_orientation_unisex_restroom_sign.svg',
+  stop_red: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Stop_sign_MUTCD.svg',
+  stop_green: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Stop_sign_MUTCD.svg',
+  caution_yellow: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Warning_icon.svg',
+  caution_green: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Warning_icon.svg',
+  weather_storm: 'https://upload.wikimedia.org/wikipedia/commons/9/9e/Toilet_paper_orientation_unisex_restroom_sign.svg',
+  world_births: 'https://upload.wikimedia.org/wikipedia/commons/9/9e/Toilet_paper_orientation_unisex_restroom_sign.svg',
+};
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('hello').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+});
+
+document.querySelectorAll('.lvl').forEach(l => {
+  l.addEventListener('click', () => activateLevel(l.dataset.lvl));
+});
+function activateLevel(id){
+  const total = document.querySelectorAll('.lvl').length;
+  document.querySelectorAll('.lvl').forEach(l => l.classList.toggle('active', l.dataset.lvl === id));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
+  document.getElementById('xpFill').style.width = (id / total * 100) + '%';
+  document.getElementById('xpCount').textContent = 'LVL ' + id + ' / ' + total;
+}
+
+/* ---------- LEVEL 1 – job data (illustrative sample, shaped like HW4's Glassdoor file) ---------- */
+const jobRows = [
+  ['Data Scientist','$70K-$126K','Biotech & Pharma','4.1'],
+  ['Data Analyst','$48K-$85K','IT Services','3.6'],
+  ['Data Engineer','$82K-$135K','Aerospace & Defense','3.9'],
+  ['ML Engineer','$88K-$142K','Finance','4.0'],
+  ['Business Analyst','$50K-$78K','Retail','3.5'],
+  ['Data Analyst','$45K-$80K','Finance','3.8'],
+  ['Data Scientist','$75K-$130K','Aerospace & Defense','4.2']
+];
+function renderJobTable(){
+  const cols = ['Job Title','Salary Estimate','Industry','Rating'];
+  const table = document.getElementById('jobTable');
+  let thead = '<thead><tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr></thead>';
+  let tbody = '<tbody>' + jobRows.map(r => '<tr>' + r.map(v => `<td>${v}</td>`).join('') + '</tr>').join('') + '</tbody>';
+  table.innerHTML = thead + tbody;
+}
+renderJobTable();
+
+const titleCounts = [
+  {name:'Data Scientist', value:132, color:'var(--lime)'},
+  {name:'Data Analyst', value:87, color:'var(--blue)'},
+  {name:'Data Engineer', value:64, color:'var(--pink)'},
+  {name:'ML Engineer', value:41, color:'var(--yellow)'},
+  {name:'Business Analyst', value:58, color:'var(--gray)'}
+];
+const industryPay = [
+  {name:'Biotech & Pharma', value:112, color:'var(--lime)'},
+  {name:'Aerospace & Defense', value:105, color:'var(--blue)'},
+  {name:'Finance', value:95, color:'var(--pink)'},
+  {name:'IT Services', value:88, color:'var(--yellow)'},
+  {name:'Retail', value:74, color:'var(--gray)'}
+];
+function renderBarChart(elId, data, highlightTop, unit){
+  const el = document.getElementById(elId);
+  const sorted = [...data].sort((a,b) => b.value - a.value);
+  const max = sorted[0].value;
+  let html = '';
+  sorted.forEach((d, i) => {
+    const pct = Math.round(d.value / max * 100);
+    const cls = highlightTop && i === 0 ? 'highlight' : '';
+    html += `<div class="bar-row"><span class="bar-label">${d.name}</span><div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%;background:${cls ? '' : d.color}"></div></div><span class="bar-value">${d.value}${unit || ''}</span></div>`;
+  });
+  el.innerHTML = html;
+}
+renderBarChart('titleChart', titleCounts, false, '');
+renderBarChart('industryChart', industryPay, false, 'k');
+
+document.querySelectorAll('.toggle-row .toggle-btn[data-view]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.toggle-row .toggle-btn[data-view]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    document.getElementById('viewTable').style.display = view === 'table' ? 'block' : 'none';
+    document.getElementById('viewChart').style.display = view === 'chart' ? 'block' : 'none';
+  });
+});
+
+/* ---------- LEVEL 3 – perception cards (open a modal) ---------- */
+const percItems = [
+  {ico:'🛑', key:'stop', title:'Red stop sign', hint:'tap to compare colors →'},
+  {ico:'⚠️', key:'caution', title:'Yellow caution sign', hint:'tap to compare colors →'},
+  {ico:'⛈️', key:'weather', title:'Weather forecast', hint:'tap to see the scale →'},
+  {ico:'🌍', key:'births', title:'World births 2025', hint:'tap to see size at work →'},
+  {ico:'🕵️', key:'mystery', title:'Guess this sign', hint:'tap to take a guess →'}
+];
+function renderPercGrid(){
+  const grid = document.getElementById('percGrid');
+  grid.innerHTML = '';
+  percItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'perc-card';
+    card.innerHTML = `<span class="pc-ico">${item.ico}</span><span class="pc-title">${item.title}</span><span class="pc-hint">${item.hint}</span>`;
+    card.addEventListener('click', () => openPercModal(item.key));
+    grid.appendChild(card);
+  });
+}
+renderPercGrid();
+
+/* ---- modal content builders ---- */
+function stopModalHtml(){
+  return `
+    <h3>Red stop sign 🛑</h3>
+    <p class="modal-sub">Same shape, same word — only the color changed.</p>
+    <div class="modal-img-row single" id="stopImgRow">
+      <div style="text-align:center;">
+        <img src="${imgData.stop_red}" alt="Red stop sign" id="stopImg">
+        <span class="img-label" id="stopImgLabel">RED — this is what a real stop sign looks like</span>
+      </div>
+    </div>
+    <div class="modal-toggle-row">
+      <button class="toggle-btn active" id="stopToggleRed">Red</button>
+      <button class="toggle-btn" id="stopToggleGreen">Green</button>
+    </div>
+    <div class="modal-note">Flip to green. The shape and the word STOP haven't changed — but it stops reading as "danger" almost instantly. <b>Red carries the warning, not the octagon and not the letters.</b> That's the whole idea: color alone can carry meaning before anyone reads a label.</div>
+  `;
+}
+function wireStopModal(){
+  const img = document.getElementById('stopImg');
+  const label = document.getElementById('stopImgLabel');
+  const redBtn = document.getElementById('stopToggleRed');
+  const greenBtn = document.getElementById('stopToggleGreen');
+  redBtn.addEventListener('click', () => {
+    img.style.filter = 'none';
+    label.textContent = 'RED — this is what a real stop sign looks like';
+    redBtn.classList.add('active'); greenBtn.classList.remove('active');
+  });
+  greenBtn.addEventListener('click', () => {
+    img.style.filter = 'hue-rotate(120deg)';
+    label.textContent = 'GREEN — same shape, same word, no urgency left';
+    greenBtn.classList.add('active'); redBtn.classList.remove('active');
+  });
+}
+
+function cautionModalHtml(){
+  return `
+    <h3>Yellow caution sign ⚠️</h3>
+    <p class="modal-sub">Same triangle, same exclamation mark — only the color changed.</p>
+    <div class="modal-img-row single" id="cautionImgRow">
+      <div style="text-align:center;">
+        <img src="${imgData.caution_yellow}" alt="Yellow caution sign" id="cautionImg">
+        <span class="img-label" id="cautionImgLabel">YELLOW — slow down, pay attention</span>
+      </div>
+    </div>
+    <div class="modal-toggle-row">
+      <button class="toggle-btn active" id="cautionToggleYellow">Yellow</button>
+      <button class="toggle-btn" id="cautionToggleGreen">Green</button>
+    </div>
+    <div class="modal-note">Flip to green. It reads more like an "info" icon than a warning now — green doesn't ask you to be careful the way yellow does. Yellow sits one notch below red: <b>not "stop," but "pay attention."</b> Charts borrow this same scale.</div>
+  `;
+}
+function wireCautionModal(){
+  const img = document.getElementById('cautionImg');
+  const label = document.getElementById('cautionImgLabel');
+  const yellowBtn = document.getElementById('cautionToggleYellow');
+  const greenBtn = document.getElementById('cautionToggleGreen');
+  yellowBtn.addEventListener('click', () => {
+    img.style.filter = 'none';
+    label.textContent = 'YELLOW — slow down, pay attention';
+    yellowBtn.classList.add('active'); greenBtn.classList.remove('active');
+  });
+  greenBtn.addEventListener('click', () => {
+    img.style.filter = 'hue-rotate(160deg)';
+    label.textContent = 'GREEN — reads as "info," not "caution"';
+    greenBtn.classList.add('active'); yellowBtn.classList.remove('active');
+  });
+}
+
+function weatherModalHtml(){
+  return `
+    <h3>Weather forecast ⛈️</h3>
+    <p class="modal-sub">When a storm is coming, you read the color scale before you read a single label.</p>
+    <div class="modal-note">Radar maps use a green → yellow → orange → red scale for rain intensity. Green is light rain, red is a downpour. You don't need to know the exact rainfall number for a city — the color alone tells you it's the worst spot on the map <b>before you read the city name.</b> Same idea as the stop sign, just with more steps on the scale.</div>
+  `;
+}
+
+function birthsModalHtml(){
+  return `
+    <h3>World births in 2025 🌍</h3>
+    <p class="modal-sub">This time it's not color doing the work — it's size.</p>
+    <div class="modal-note">Picture a map where every country gets a shape sized to its number of births. Every shape can be the same color — no color-coding by danger or severity. But you can still tell India (23.1M) matters more than Nepal (552K) instantly — <b>because the shape for India is enormous and Nepal's is tiny.</b> Size alone can carry "how much," the same way color alone carried "how dangerous" in the stop sign.</div>
+  `;
+}
+
+function mysteryModalHtml(){
+  return `
+    <h3>Guess this sign 🕵️</h3>
+    <p class="modal-sub">No color here at all — just two black silhouettes. What sign does this remind you of?</p>
+    <div class="modal-img-row single">
+      <img src="${imgData.toilet_sign}" alt="Two black silhouettes, one in pants, one in a dress">
+    </div>
+    <div class="modal-toggle-row">
+      <button class="toggle-btn" id="mysteryRevealBtn">Reveal the answer</button>
+    </div>
+    <div class="modal-note" id="mysteryAnswer" style="display:none;">This is a <b>public restroom sign</b> — men's on the left, women's on the right. No color, no text, not even faces. Just two shapes, and almost everyone reads it instantly. <b>Shape alone can carry meaning</b> — the same job color did for the stop sign and size did for the world births map.</div>
+  `;
+}
+
+const percModalBuilders = {
+  stop: {html: stopModalHtml, wire: wireStopModal},
+  caution: {html: cautionModalHtml, wire: wireCautionModal},
+  weather: {html: weatherModalHtml, wire: null},
+  births: {html: birthsModalHtml, wire: null},
+  mystery: {html: mysteryModalHtml, wire: wireMysteryModal}
+};
+
+function wireMysteryModal(){
+  const btn = document.getElementById('mysteryRevealBtn');
+  const answer = document.getElementById('mysteryAnswer');
+  btn.addEventListener('click', () => {
+    answer.style.display = 'block';
+    btn.textContent = 'Answer revealed ✓';
+  });
+}
+
+function openPercModal(key){
+  const builder = percModalBuilders[key];
+  document.getElementById('percModalContent').innerHTML = builder.html();
+  if(builder.wire) builder.wire();
+  document.getElementById('percModal').classList.add('open');
+}
+function closePercModal(){
+  document.getElementById('percModal').classList.remove('open');
+}
+document.getElementById('percModalClose').addEventListener('click', closePercModal);
+document.getElementById('percModal').addEventListener('click', (e) => {
+  if(e.target.id === 'percModal') closePercModal();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') closePercModal();
+});
+
+/* ---------- LEVEL 4 – four chart types ---------- */
+function buildBarMini(){
+  let html = '<div class="bar-chart">';
+  [...titleCounts].sort((a,b) => b.value - a.value).forEach(d => {
+    const pct = Math.round(d.value / titleCounts[0].value * 100);
+    html += `<div class="bar-row"><span class="bar-label">${d.name}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${d.color}"></div></div><span class="bar-value">${d.value}</span></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+const cafeDaily = [42,38,51,47,33,60,55,63,58,45];
+function buildLineMini(){
+  const w = 320, h = 110, pad = 10;
+  const max = Math.max(...cafeDaily), min = Math.min(...cafeDaily);
+  const pts = cafeDaily.map((v,i) => {
+    const x = pad + i * ((w - pad*2) / (cafeDaily.length - 1));
+    const y = h - pad - ((v - min) / (max - min)) * (h - pad*2);
+    return `${x},${y}`;
+  }).join(' ');
+  return `<div class="mini-line-wrap"><svg viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="#5c7a17" stroke-width="2.5"/></svg></div>
+  <div class="cc-borrowed">Borrowed from Session 1's cafe data — HW4 has no date column, so this is what "trend over time" looks like once your data has one.</div>`;
+}
+
+const rolesShare = [
+  {name:'Data Science', v:22, color:'var(--lime)'},
+  {name:'Data Analytics', v:18, color:'var(--blue)'},
+  {name:'Data Engineering', v:15, color:'var(--pink)'}
+];
+function buildPieMini(){
+  let acc = 0;
+  const stops = rolesShare.map(r => {
+    const start = acc; acc += r.v;
+    return `${getCssVar(r.color)} ${start}% ${acc}%`;
+  }).join(', ');
+  const legend = rolesShare.map(r => `<div class="pl-row"><span class="pl-dot" style="background:${getCssVar(r.color)}"></span>${r.name} — ${r.v}%</div>`).join('');
+  return `<div class="mini-pie-wrap"><div class="pie-circle" style="background:conic-gradient(${stops})"></div><div class="pie-legend">${legend}</div></div>`;
+}
+function getCssVar(v){
+  const map = {'var(--lime)':'#a4d925','var(--blue)':'#2f7dff','var(--pink)':'#ff3d94','var(--yellow)':'#ffc328','var(--gray)':'#8a8a94'};
+  return map[v] || v;
+}
+
+function buildScatterMini(){
+  const w = 320, h = 140, pad = 24;
+  const points = [
+    [3.2,52],[3.5,58],[3.8,64],[3.6,60],[4.0,75],[4.1,80],[3.9,70],[4.3,92],[4.4,98],
+    [3.4,55],[4.2,88],[3.7,62],[4.5,104],[3.3,50],[4.0,72]
+  ];
+  const xMax = 4.6, xMin = 3.0, yMax = 110, yMin = 40;
+  const dots = points.map(([x,y]) => {
+    const px = pad + ((x - xMin) / (xMax - xMin)) * (w - pad*2);
+    const py = h - pad - ((y - yMin) / (yMax - yMin)) * (h - pad*2);
+    return `<circle cx="${px}" cy="${py}" r="4" fill="#ff3d94" opacity="0.75"/>`;
+  }).join('');
+  return `<div class="mini-scatter-wrap"><svg viewBox="0 0 ${w} ${h}">
+    <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="#c7cbc0"/>
+    <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${h-pad}" stroke="#c7cbc0"/>
+    ${dots}
+  </svg></div><div class="cc-borrowed">x-axis: company rating (3.0–4.6) · y-axis: salary estimate ($k)</div>`;
+}
+
+const chartItems = [
+  {key:'bar', name:'Bar chart', job:'Compare categories side by side', question:'Which role has the most postings?', build:buildBarMini},
+  {key:'line', name:'Line chart', job:'Show a trend over time', question:'Are daily sales climbing or falling?', build:buildLineMini},
+  {key:'pie', name:'Pie chart', job:'Show parts of a whole — use sparingly', question:'What share of postings is Data Science vs. Analytics vs. Engineering?', build:buildPieMini},
+  {key:'scatter', name:'Scatter plot', job:'Show a relationship between two numbers', question:'Does a higher company rating line up with higher pay?', build:buildScatterMini}
+];
+function renderChartGrid(){
+  const grid = document.getElementById('chartGrid');
+  grid.innerHTML = '';
+  chartItems.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.dataset.chart = item.key;
+    card.innerHTML = `
+      <span class="cc-name">${item.name}</span>
+      <span class="cc-job">${item.job}</span>
+      <span class="cc-hint">tap to see it answer a real question →</span>
+      <div class="cc-detail">
+        <div class="cc-question">🎯 ${item.question}</div>
+        ${item.build()}
+      </div>
+    `;
+    card.addEventListener('click', () => card.classList.toggle('expanded'));
+    grid.appendChild(card);
+  });
+}
+renderChartGrid();
+
+const matchItems = [
+  {q:'Which industry pays the most on average?', a:'Bar chart — comparing a handful of categories (industries) side by side.'},
+  {q:'What share of postings are remote vs. on-site?', a:'Pie chart works here — only two or three slices, a true "part of a whole" question.'},
+  {q:'Does company size relate to salary?', a:'Scatter plot — you\'re looking for a relationship between two numeric variables.'}
+];
+function renderMatchRound(){
+  const wrap = document.getElementById('matchRound');
+  wrap.innerHTML = '';
+  matchItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'match-item';
+    div.innerHTML = `<div class="mi-q">${item.q}</div><div class="mi-a">${item.a}</div>`;
+    div.addEventListener('click', () => div.classList.toggle('open'));
+    wrap.appendChild(div);
+  });
+}
+renderMatchRound();
+
+/* ---------- LEVEL 5 – right chart, wrong choice ---------- */
+const sectorShare = [
+  {name:'Biotech & Pharma', v:19, color:'#a4d925'},
+  {name:'IT Services', v:16, color:'#2f7dff'},
+  {name:'Aerospace & Defense', v:14, color:'#ff3d94'},
+  {name:'Finance', v:12, color:'#ffc328'},
+  {name:'Retail', v:10, color:'#8a8a94'},
+  {name:'Insurance', v:9, color:'#5c7a17'},
+  {name:'Health Care', v:8, color:'#9c5cff'},
+  {name:'Manufacturing', v:7, color:'#e0405a'},
+  {name:'Other sectors', v:5, color:'#c7cbc0'}
+];
+function renderBadPie(){
+  let acc = 0;
+  const stops = sectorShare.map(s => { const start = acc; acc += s.v; return `${s.color} ${start}% ${acc}%`; }).join(', ');
+  const legend = sectorShare.map(s => `<div class="pl-row"><span class="pl-dot" style="background:${s.color}"></span>${s.name} — ${s.v}%</div>`).join('');
+  document.getElementById('pieBad').innerHTML = `<div class="pie-circle" style="background:conic-gradient(${stops})"></div><div class="pie-legend">${legend}</div>`;
+}
+function renderFixBar(){
+  const sorted = [...sectorShare].sort((a,b) => b.v - a.v);
+  const max = sorted[0].v;
+  let html = '';
+  sorted.forEach((s,i) => {
+    const pct = Math.round(s.v / max * 100);
+    const cls = i === 0 ? 'highlight' : '';
+    html += `<div class="bar-row"><span class="bar-label">${s.name}</span><div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%;background:${cls ? '' : s.color}"></div></div><span class="bar-value">${s.v}%</span></div>`;
+  });
+  document.getElementById('pieFixBar').innerHTML = html;
+}
+document.getElementById('revealSlicesBtn').addEventListener('click', () => {
+  renderBadPie();
+  renderFixBar();
+  document.getElementById('sliceReveal').style.display = 'block';
+  document.getElementById('revealSlicesBtn').textContent = '🥧 Pie chart revealed ✓';
+});
+
+/* ---------- LEVEL 5, case 2 – bar chart used for a stock price trend ---------- */
+const stockDates = ['Aug 1','Aug 2','Aug 3','Aug 4','Aug 5','Aug 6','Aug 7','Aug 8','Aug 9','Aug 10','Aug 11','Aug 12','Aug 13','Aug 14','Aug 15'];
+const stockPrices = [142, 145, 143, 148, 151, 149, 154, 158, 156, 161, 165, 163, 168, 172, 170];
+
+function stockAxesSvg(w, h, padL, padR, padT, padB, yMin, yMax, dateLabelEvery){
+  const yTicks = [yMin, Math.round((yMin+yMax)/2), yMax];
+  let svg = '';
+  yTicks.forEach(t => {
+    const y = padT + (h - padT - padB) - ((t - yMin) / (yMax - yMin)) * (h - padT - padB);
+    svg += `<line x1="${padL}" y1="${y}" x2="${w - padR}" y2="${y}" stroke="#e4e6de" stroke-width="1"/>`;
+    svg += `<text x="${padL - 6}" y="${y + 3}" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="9" fill="#6c6c76">$${t}</text>`;
+  });
+  svg += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${h - padB}" stroke="#1c1c22" stroke-width="1"/>`;
+  svg += `<line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#1c1c22" stroke-width="1"/>`;
+  stockDates.forEach((d, i) => {
+    if(i % dateLabelEvery !== 0) return;
+    const x = padL + i * ((w - padL - padR) / (stockDates.length - 1));
+    svg += `<text x="${x}" y="${h - padB + 14}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#6c6c76">${d}</text>`;
+  });
+  svg += `<text x="${padL - 30}" y="${padT - 4}" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#6c6c76">Price ($)</text>`;
+  svg += `<text x="${w - padR - 30}" y="${h - 2}" font-family="JetBrains Mono, monospace" font-size="8.5" fill="#6c6c76">Date →</text>`;
+  return svg;
+}
+
+function renderStockBadBar(){
+  const w = 340, h = 180, padL = 38, padR = 10, padT = 16, padB = 26;
+  const yMin = 130, yMax = 180;
+  const barW = (w - padL - padR) / stockPrices.length * 0.65;
+  const gap = (w - padL - padR) / stockPrices.length;
+  let bars = '';
+  stockPrices.forEach((v,i) => {
+    const x = padL + i * gap + (gap - barW) / 2;
+    const yTop = padT + (h - padT - padB) - ((v - yMin) / (yMax - yMin)) * (h - padT - padB);
+    const barH = (h - padB) - yTop;
+    bars += `<rect x="${x}" y="${yTop}" width="${barW}" height="${barH}" fill="#2f7dff" rx="2"/>`;
+  });
+  const axes = stockAxesSvg(w, h, padL, padR, padT, padB, yMin, yMax, 3);
+  document.getElementById('stockBadBar').innerHTML = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;">${axes}${bars}</svg>`;
+}
+
+function renderStockGoodLine(){
+  const w = 340, h = 180, padL = 38, padR = 10, padT = 16, padB = 26;
+  const yMin = 130, yMax = 180;
+  const pts = stockPrices.map((v,i) => {
+    const x = padL + i * ((w - padL - padR) / (stockPrices.length - 1));
+    const y = padT + (h - padT - padB) - ((v - yMin) / (yMax - yMin)) * (h - padT - padB);
+    return `${x},${y}`;
+  }).join(' ');
+  const axes = stockAxesSvg(w, h, padL, padR, padT, padB, yMin, yMax, 3);
+  document.getElementById('stockGoodLine').innerHTML = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;">${axes}<polyline points="${pts}" fill="none" stroke="#5c7a17" stroke-width="2.5"/></svg>
+  <div class="note-tag">Same 15 trading days and closing prices as the bar chart</div>`;
+}
+
+document.getElementById('revealStockBtn').addEventListener('click', () => {
+  renderStockBadBar();
+  renderStockGoodLine();
+  document.getElementById('stockReveal').style.display = 'block';
+  document.getElementById('revealStockBtn').textContent = '📊 Bar chart revealed ✓';
+});
+</script>
+
+</body>
+</html>

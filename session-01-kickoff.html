@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 01 – Hello!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* palette – bg #fafaf6 · panel #ffffff · ink #14141a · lime #a4d925 · pink #ff3d94 · blue #2f7dff · yellow #ffc328
+     type – Space Grotesk (display) · Inter (body) · JetBrains Mono (HUD / labels) */
+  :root{
+    --bg:#fafaf6;
+    --panel:#ffffff;
+    --panel2:#f2f2ea;
+    --line:#1c1c22;
+    --ink:#14141a;
+    --muted:#6c6c76;
+    --lime:#a4d925;
+    --pink:#ff3d94;
+    --blue:#2f7dff;
+    --yellow:#ffc328;
+    --lime-deep:#5c7a17;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+
+  /* ---------- HELLO SCREEN ---------- */
+  #hello{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:26px;
+    padding:24px;
+  }
+  #hello .badge{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--muted);
+    border:1px solid var(--line);
+    padding:6px 14px;
+    border-radius:20px;
+  }
+  #hello h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(64px,14vw,160px);
+    margin:0;
+    line-height:1;
+    color:var(--ink);
+  }
+  #hello h1 span{color:var(--pink);}
+  .start-btn{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:20px;
+    color:var(--ink);
+    background:var(--lime);
+    border:2px solid var(--ink);
+    padding:16px 36px;
+    border-radius:40px;
+    cursor:pointer;
+    box-shadow:0 6px 0 var(--ink);
+    transition:transform .1s ease, box-shadow .1s ease;
+  }
+  .start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink);}
+  .start-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+
+  /* ---------- MAIN APP ---------- */
+  #app{display:none;max-width:1000px;margin:0 auto;padding:28px 22px 70px;}
+
+  .hud-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .hud-top .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .xp-bar{flex:1;height:8px;background:var(--panel2);border-radius:6px;margin:0 16px;overflow:hidden;}
+  .xp-fill{height:100%;width:33%;background:linear-gradient(90deg,var(--blue),var(--lime));transition:width .3s ease;}
+  .xp-count{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);white-space:nowrap;}
+
+  .levels{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;}
+  .lvl{
+    flex:1;
+    min-width:150px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    text-align:center;
+    padding:14px 10px;
+    border-radius:14px;
+    border:2px solid var(--line);
+    background:var(--panel);
+    color:var(--muted);
+    cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease, color .12s ease;
+  }
+  .lvl small{display:block;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:10.5px;letter-spacing:.1em;margin-bottom:4px;opacity:.8;}
+  .lvl:hover{transform:translateY(-2px);}
+  .lvl.active{color:var(--ink);}
+  .lvl[data-lvl="1"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="2"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="3"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl[data-lvl="4"].active{background:var(--yellow);border-color:var(--yellow);}
+  .lvl[data-lvl="5"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="6"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="7"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+
+  .stage{
+    background:var(--panel);
+    border:2px solid var(--line);
+    border-radius:20px;
+    padding:30px 26px 34px;
+  }
+  .page{display:none;}
+  .page.active{display:block;animation:pop .22s ease;}
+  @keyframes pop{from{opacity:0;transform:scale(.98);}to{opacity:1;transform:scale(1);}}
+
+  .page h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(26px,4vw,36px);
+    margin:0 0 22px;
+  }
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px;}
+  .chip{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px 16px;
+    font-size:15px;
+    font-weight:600;
+  }
+  .chip .ico{font-size:20px;}
+
+  .section-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 10px;
+  }
+
+  .dot-row{display:flex;gap:8px;align-items:center;margin-top:2px;}
+  .dot{width:26px;height:26px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+  .dot-label{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-left:4px;}
+
+  .hero-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+  .hero-card{
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease, transform .1s ease;
+  }
+  .hero-card:hover{transform:translateY(-2px);}
+  .hero-card.expanded{border-color:var(--pink);background:rgba(255,61,148,0.08);text-align:left;}
+  .hero-card .hn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;display:block;}
+  .hero-card .ht{font-size:12px;color:var(--muted);display:block;margin-top:3px;}
+  .hero-card .hero-detail{display:none;font-size:12.5px;color:var(--ink);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);line-height:1.5;}
+  .hero-card.expanded .hero-detail{display:block;}
+  .hero-card .hero-hint{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:6px;}
+  .hero-card.expanded .hero-hint{display:none;}
+
+  .big-q{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(20px,3vw,26px);
+    margin:0 0 14px;
+  }
+  .word-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .word-chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--muted);
+    border:1px dashed var(--line);
+    border-radius:20px;
+    padding:6px 12px;
+  }
+
+  /* 4 types of analytics */
+  .toggle-row{display:flex;gap:8px;margin-bottom:20px;}
+  .toggle-btn{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:var(--panel2);
+    color:var(--muted);
+    cursor:pointer;
+  }
+  .toggle-btn.active{background:var(--lime);color:var(--ink);border-color:var(--lime);}
+  .toggle-btn:focus-visible{outline:2px solid var(--yellow);outline-offset:2px;}
+
+  .reveal-hint{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--muted);
+    border:1px dashed var(--line);
+    border-radius:14px;
+    padding:26px;
+    text-align:center;
+  }
+
+  .type-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;}
+  .type-card{
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-left:5px solid var(--ink);
+    border-radius:12px;
+    padding:14px 16px;
+    cursor:pointer;
+    transition:background .15s ease, box-shadow .15s ease;
+  }
+  .type-card[data-type="descriptive"]{border-left-color:var(--blue);}
+  .type-card[data-type="diagnostic"]{border-left-color:var(--pink);}
+  .type-card[data-type="predictive"]{border-left-color:var(--yellow);}
+  .type-card[data-type="prescriptive"]{border-left-color:var(--lime);}
+  .type-card .tc-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;display:block;margin-bottom:6px;}
+  .type-card .tc-ex{font-size:13px;color:var(--muted);}
+  .type-card .tc-hint{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;}
+  .type-card.expanded{background:var(--panel);box-shadow:0 2px 8px rgba(20,20,26,0.08);}
+  .type-card.expanded .tc-hint{display:none;}
+  .type-card .tc-detail{display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);}
+  .type-card.expanded .tc-detail{display:block;}
+  .type-card .tc-detail ul{margin:0;padding-left:16px;}
+  .type-card .tc-detail li{font-size:12.5px;color:var(--ink);margin-bottom:4px;}
+
+  .discuss{
+    margin-top:20px;
+    background:rgba(164,217,37,0.14);
+    border:1px solid var(--lime);
+    border-radius:14px;
+    padding:16px 18px;
+  }
+  .discuss .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--lime-deep);margin-bottom:6px;}
+  .discuss p{margin:0;font-size:15px;font-weight:500;}
+
+  /* page 4 – data tables */
+  .data-tab-btn{background:var(--panel2);}
+  .data-tab-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+
+  .mission{
+    background:rgba(255,195,40,0.18);
+    border:1px solid var(--yellow);
+    border-radius:14px;
+    padding:14px 18px;
+    margin-bottom:18px;
+  }
+  .mission .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8a6a00;margin-bottom:6px;}
+  .mission p{margin:0;font-size:15px;font-weight:600;}
+
+  .data-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;}
+  table.data-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12.5px;min-width:420px;}
+  table.data-table th{
+    background:var(--panel2);
+    text-align:left;
+    padding:9px 12px;
+    border-bottom:2px solid var(--line);
+    font-size:11px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  table.data-table td{padding:8px 12px;border-bottom:1px solid var(--line);}
+  table.data-table tr:nth-child(even) td{background:var(--panel2);}
+
+  .hook{
+    margin-top:20px;
+    background:rgba(47,125,255,0.08);
+    border:1px solid var(--blue);
+    border-radius:14px;
+    padding:16px 18px;
+  }
+  .hook .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;}
+  .hook p{margin:0;font-size:15px;font-weight:500;}
+
+  /* page 5 – scale up */
+  .data-table-wrap.scrollable{max-height:340px;overflow-y:auto;}
+  table.data-table thead th{position:sticky;top:0;z-index:1;}
+
+  .cta-wrap{text-align:center;margin:20px 0;}
+  .cta-btn{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    color:var(--ink);
+    background:var(--lime);
+    border:2px solid var(--ink);
+    padding:12px 26px;
+    border-radius:40px;
+    cursor:pointer;
+    box-shadow:0 5px 0 var(--ink);
+    transition:transform .1s ease, box-shadow .1s ease;
+  }
+  .cta-btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink);}
+  .cta-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+
+  .bar-chart{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+  .bar-row{display:grid;grid-template-columns:140px 1fr 46px;align-items:center;gap:10px;}
+  .bar-label{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--ink);}
+  .bar-track{background:var(--panel2);border:1px solid var(--line);border-radius:8px;height:24px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:7px 0 0 7px;transition:width .6s ease;}
+  .bar-value{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);text-align:right;}
+
+  /* page 6 – decide */
+  .decision-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}
+  .decision-card{
+    background:var(--panel2);
+    border:2px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease, transform .1s ease;
+  }
+  .decision-card:hover{transform:translateY(-2px);}
+  .decision-card.selected{border-color:var(--lime);background:rgba(164,217,37,0.14);}
+  .decision-card .dc-ico{font-size:22px;display:block;margin-bottom:4px;}
+  .decision-card .dc-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;display:block;margin-bottom:4px;}
+  .decision-card .dc-check{display:none;color:var(--lime-deep);margin-left:4px;}
+  .decision-card.selected .dc-check{display:inline;}
+  .decision-card .dc-detail{font-size:12.5px;color:var(--muted);}
+
+  /* page 7 – recap */
+  .recap-statement{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(22px,4vw,32px);
+    line-height:1.35;
+    margin:6px 0 28px;
+  }
+  .recap-statement .hl-blue{color:var(--blue);}
+  .recap-statement .hl-pink{color:var(--pink);}
+  .recap-statement .hl-lime{color:var(--lime-deep);}
+
+  .success-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px;}
+  .success-card{
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+    text-align:center;
+  }
+  .success-card .sc-ico{font-size:22px;display:block;margin-bottom:4px;}
+  .success-card .sc-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;display:block;margin-bottom:3px;}
+  .success-card .sc-detail{font-size:12px;color:var(--muted);}
+
+  .next-tag{
+    margin-top:22px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    border-top:1px solid var(--line);
+    padding-top:14px;
+  }
+  .next-tag b{color:var(--lime-deep);}
+
+  @media (max-width:560px){
+    .lvl{min-width:100%;}
+  }
+</style>
+</head>
+<body>
+
+<div id="hello">
+  <div class="badge">Session 01</div>
+  <h1>Hello<span>!</span></h1>
+  <button class="start-btn" id="startBtn">Let's go ▶</button>
+</div>
+
+<div id="app">
+
+  <div class="hud-top">
+    <span class="tag">Progress</span>
+    <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+    <span class="xp-count" id="xpCount">LVL 1 / 7</span>
+  </div>
+
+  <div class="levels">
+    <div class="lvl active" data-lvl="1"><small>Level 1</small>Squad Check 👋</div>
+    <div class="lvl" data-lvl="2"><small>Level 2</small>Ice Break 🧊</div>
+    <div class="lvl" data-lvl="3"><small>Level 3</small>Unlock 🔓</div>
+    <div class="lvl" data-lvl="4"><small>Level 4</small>Play w/ Data 📊</div>
+    <div class="lvl" data-lvl="5"><small>Level 5</small>Scale Up 📈</div>
+    <div class="lvl" data-lvl="6"><small>Level 6</small>Decide 🧭</div>
+    <div class="lvl" data-lvl="7"><small>Level 7</small>Recap 🎯</div>
+  </div>
+
+  <div class="stage">
+
+    <!-- LEVEL 1 -->
+    <div class="page active" id="page-1">
+      <h2>Squad check 👋</h2>
+
+      <div class="section-tag">Instructor first</div>
+      <div class="chip-row">
+        <div class="chip"><span class="ico">👤</span>Name</div>
+        <div class="chip"><span class="ico">💡</span>Why data?</div>
+        <div class="chip"><span class="ico">🎲</span>Random fact</div>
+      </div>
+
+      <div class="section-tag">You — 3 min each</div>
+      <div class="chip-row">
+        <div class="chip"><span class="ico">🙋</span>Name + grade</div>
+        <div class="chip"><span class="ico">🔥</span>Curious about</div>
+        <div class="chip"><span class="ico">✨</span>Fun fact</div>
+      </div>
+      <div class="dot-row" id="dotRow"></div>
+    </div>
+
+    <!-- LEVEL 2 -->
+    <div class="page" id="page-2">
+      <h2>Ice break 🧊</h2>
+
+      <div class="section-tag">Pick one</div>
+      <p class="big-q">Marvel or X-Men — who are you?</p>
+      <div class="hero-grid">
+        <div class="hero-card"><span class="hn">Iron Man</span><span class="ht">builds fast</span><span class="hero-detail">You'd rather try something and fix it as you go than wait for a perfect plan. You like having your own gadgets and ways of doing things.</span><span class="hero-hint">tap to reveal →</span></div>
+        <div class="hero-card"><span class="hn">Spider-Man</span><span class="ht">figures it out live</span><span class="hero-detail">You're good under pressure and can think on your feet. You juggle a lot — school, friends, family — and somehow keep it together.</span><span class="hero-hint">tap to reveal →</span></div>
+        <div class="hero-card"><span class="hn">Cap America</span><span class="ht">sticks to the plan</span><span class="hero-detail">You have strong values and don't budge on them, even when it's easier to. People trust you to do the right thing.</span><span class="hero-hint">tap to reveal →</span></div>
+        <div class="hero-card"><span class="hn">Black Panther</span><span class="ht">quiet leader</span><span class="hero-detail">You don't need to be the loudest person in the room to lead. You think things through and take care of your people.</span><span class="hero-hint">tap to reveal →</span></div>
+        <div class="hero-card"><span class="hn">Captain Marvel</span><span class="ht">full send, no hesitation</span><span class="hero-detail">Once you decide something, you go all in. You don't waste time doubting yourself once you've made up your mind.</span><span class="hero-hint">tap to reveal →</span></div>
+        <div class="hero-card"><span class="hn">Wolverine</span><span class="ht">just keeps going</span><span class="hero-detail">You're tough and don't give up, even after setbacks. Things that would stop other people barely slow you down.</span><span class="hero-hint">tap to reveal →</span></div>
+        <div class="hero-card"><span class="hn">Storm</span><span class="ht">reads the room</span><span class="hero-detail">You notice how people are feeling before they say anything. You know when to speak up and when to just listen.</span><span class="hero-hint">tap to reveal →</span></div>
+        <div class="hero-card"><span class="hn">Professor X</span><span class="ht">sees it before you say it</span><span class="hero-detail">You're good at understanding people — sometimes you know what someone needs before they ask for it.</span><span class="hero-hint">tap to reveal →</span></div>
+        <div class="hero-card"><span class="hn">Scarlet Witch</span><span class="ht">changes the whole game</span><span class="hero-detail">When something isn't working, you're not afraid to try a totally different approach instead of forcing the old one.</span><span class="hero-hint">tap to reveal →</span></div>
+        <div class="hero-card"><span class="hn">Dr. Strange</span><span class="ht">plays every outcome first</span><span class="hero-detail">You like thinking a few steps ahead before you act. You'd rather plan for what could go wrong than be caught off guard.</span><span class="hero-hint">tap to reveal →</span></div>
+      </div>
+
+      <div class="section-tag" style="margin-top:24px;">One more</div>
+      <p class="big-q">A dream you have, or something you love doing?</p>
+      <div class="word-chips">
+        <span class="word-chip">hobby</span>
+        <span class="word-chip">dream job</span>
+        <span class="word-chip">lose-track-of-time thing</span>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 -->
+    <div class="page" id="page-3">
+      <h2>Data analytics in daily life 🧠</h2>
+      <p class="big-q" style="font-size:17px;color:var(--muted);font-weight:500;">Tap an example. Tap again to hide it.</p>
+
+      <div class="toggle-row">
+        <button class="toggle-btn" data-ex="major">Which major fits me? 🎓</button>
+        <button class="toggle-btn" data-ex="tea">Milk tea shop 🧋</button>
+      </div>
+
+      <div class="answer-panel" id="panelMajor" style="display:none;">
+        <div class="type-grid" id="typeGridMajor"></div>
+        <div class="discuss">
+          <div class="dl">Discuss</div>
+          <p>What's a subject you're always good at without really trying?</p>
+        </div>
+      </div>
+
+      <div class="answer-panel" id="panelTea" style="display:none;">
+        <div class="type-grid" id="typeGridTea"></div>
+        <div class="discuss">
+          <div class="dl">Discuss</div>
+          <p>You own the shop. Which of these matters most to you?</p>
+        </div>
+      </div>
+
+      <div class="next-tag">Next quest — <b>vote on the one dataset</b> we investigate all 11 sessions.</div>
+    </div>
+
+    <!-- LEVEL 4 -->
+    <div class="page" id="page-4">
+      <h2>Time to play with data 📊</h2>
+      <p class="big-q" style="font-size:17px;color:var(--muted);font-weight:500;">This is what a tea shop owner could actually look at.</p>
+
+      <div class="toggle-row">
+        <button class="toggle-btn data-tab-btn active" data-tab="orders">🧾 Orders</button>
+        <button class="toggle-btn data-tab-btn" data-tab="daily">📅 Daily totals</button>
+        <button class="toggle-btn data-tab-btn" data-tab="feedback">⭐ Feedback</button>
+      </div>
+
+      <div class="mission">
+        <div class="dl">🎯 Mission</div>
+        <p>Using the Orders tab — what's the best-selling item on Aug 8?</p>
+      </div>
+
+      <div class="data-table-wrap"><table class="data-table" id="dataTable"></table></div>
+
+      <div class="hook">
+        <div class="dl">Now scale it up</div>
+        <p>One day, you can count by hand. A month or a year of this? You'll need a tool to process and visualize the pattern — that's next.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 5 -->
+    <div class="page" id="page-5">
+      <h2>Now try a month 📈</h2>
+      <p class="big-q" style="font-size:17px;color:var(--muted);font-weight:500;">Same question. Way more rows.</p>
+
+      <div class="mission">
+        <div class="dl">🎯 Mission</div>
+        <p>Find the best-selling item this month. Scroll if you dare.</p>
+      </div>
+
+      <div class="data-table-wrap scrollable"><table class="data-table" id="monthTable"></table></div>
+
+      <div class="cta-wrap">
+        <button class="cta-btn" id="revealChartBtn">📊 Just show me the pattern</button>
+      </div>
+
+      <div id="chartReveal" style="display:none;">
+        <div class="section-tag">One month, by product</div>
+        <div class="bar-chart" id="monthChart"></div>
+        <div class="hook" style="margin-top:16px;">
+          <div class="dl">Pattern spotted</div>
+          <p id="weekendStat">Crunching the weekday vs. weekend split…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 6 -->
+    <div class="page" id="page-6">
+      <h2>Make the call 🧭</h2>
+      <p class="big-q" style="font-size:17px;color:var(--muted);font-weight:500;">Data doesn't decide for you. You do. Pick what you'd actually do.</p>
+
+      <div class="decision-grid">
+        <div class="decision-card" data-key="promote">
+          <span class="dc-ico">📣</span>
+          <span class="dc-title">Promote other items<span class="dc-check">✓</span></span>
+          <span class="dc-detail">Discount Thai Tea & Mango Green Tea to even out sales</span>
+        </div>
+        <div class="decision-card" data-key="double">
+          <span class="dc-ico">🎯</span>
+          <span class="dc-title">Double down on the winner<span class="dc-check">✓</span></span>
+          <span class="dc-detail">Feature Taro Milk Tea everywhere — it's already working</span>
+        </div>
+        <div class="decision-card" data-key="stock">
+          <span class="dc-ico">📦</span>
+          <span class="dc-title">Stock up before weekends<span class="dc-check">✓</span></span>
+          <span class="dc-detail">Order more taro ingredients ahead of the Sat–Sun rush</span>
+        </div>
+        <div class="decision-card" data-key="hire">
+          <span class="dc-ico">👥</span>
+          <span class="dc-title">Hire weekend help<span class="dc-check">✓</span></span>
+          <span class="dc-detail">Add staff when weekend traffic spikes</span>
+        </div>
+        <div class="decision-card" data-key="bundle">
+          <span class="dc-ico">🤝</span>
+          <span class="dc-title">Bundle it<span class="dc-check">✓</span></span>
+          <span class="dc-detail">Pair Taro with a slower seller to lift both</span>
+        </div>
+        <div class="decision-card" data-key="hours">
+          <span class="dc-ico">⏰</span>
+          <span class="dc-title">Extend weekend hours<span class="dc-check">✓</span></span>
+          <span class="dc-detail">Stay open later when demand is highest</span>
+        </div>
+      </div>
+
+      <div class="discuss">
+        <div class="dl">Discuss</div>
+        <p>Pick your top 2. Defend them to the group — no wrong answer, just be ready to argue it.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 7 -->
+    <div class="page" id="page-7">
+      <h2>That's the whole thing 🎉</h2>
+
+      <p class="recap-statement">Data analytics is simply asking a <span class="hl-blue">question</span>, using data to find the <span class="hl-pink">pattern</span>, then making a better <span class="hl-lime">decision</span>.</p>
+
+      <div class="chip-row">
+        <div class="chip"><span class="ico">❓</span>Ask a question</div>
+        <div class="chip"><span class="ico">📈</span>Find the pattern</div>
+        <div class="chip"><span class="ico">✅</span>Decide</div>
+      </div>
+
+      <div class="section-tag" style="margin-top:26px;">One more thing</div>
+      <p class="big-q" style="font-size:17px;">How to actually be good at this 🚀</p>
+      <div class="cta-wrap">
+        <button class="cta-btn" id="revealSuccessBtn">🔓 Show me</button>
+      </div>
+      <div class="success-grid" id="successGrid" style="display:none;">
+        <div class="success-card"><span class="sc-ico">🧠</span><span class="sc-title">Be curious</span><span class="sc-detail">Ask good questions</span></div>
+        <div class="success-card"><span class="sc-ico">⏳</span><span class="sc-title">Be patient</span><span class="sc-detail">Data takes time</span></div>
+        <div class="success-card"><span class="sc-ico">🎯</span><span class="sc-title">Be objective</span><span class="sc-detail">Know the goal first</span></div>
+        <div class="success-card"><span class="sc-ico">🔬</span><span class="sc-title">Think critical</span><span class="sc-detail">Catch details, spot patterns</span></div>
+        <div class="success-card"><span class="sc-ico">🤔</span><span class="sc-title">Doubt it</span><span class="sc-detail">Verify the source first</span></div>
+        <div class="success-card"><span class="sc-ico">🤖</span><span class="sc-title">Use AI</span><span class="sc-detail">Assistant, not the answer</span></div>
+      </div>
+
+      <div class="next-tag">See you next week — we pick <b>the one dataset</b> this whole course runs on.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('hello').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+});
+
+document.querySelectorAll('.lvl').forEach(l => {
+  l.addEventListener('click', () => activateLevel(l.dataset.lvl));
+});
+function activateLevel(id){
+  const total = document.querySelectorAll('.lvl').length;
+  document.querySelectorAll('.lvl').forEach(l => l.classList.toggle('active', l.dataset.lvl === id));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
+  document.getElementById('xpFill').style.width = (id / total * 100) + '%';
+  document.getElementById('xpCount').textContent = 'LVL ' + id + ' / ' + total;
+}
+
+document.querySelectorAll('.hero-card').forEach(card => {
+  card.addEventListener('click', () => card.classList.toggle('expanded'));
+});
+
+const dotRow = document.getElementById('dotRow');
+for(let i = 1; i <= 5; i++){
+  const d = document.createElement('div');
+  d.className = 'dot';
+  d.textContent = i;
+  dotRow.appendChild(d);
+}
+const dl = document.createElement('span');
+dl.className = 'dot-label';
+dl.textContent = '× 3 min ≈ 15 min';
+dotRow.appendChild(dl);
+
+const analyticsTypes = {
+  major: [
+    {type:'descriptive', q:'What happened?', ex:'What subjects do you actually enjoy and do well in?',
+      examples:["You're the one who explains math to your friends", 'You lose track of time in art class', "You'd rather write the essay than do the lab report"]},
+    {type:'diagnostic', q:'Why did it happen?', ex:'Why do you like those subjects?',
+      examples:['Maybe you like explaining things to people', 'Maybe you like building something from nothing', 'Maybe you like clear right-or-wrong answers']},
+    {type:'predictive', q:'What might happen next?', ex:'If that pattern holds, what fields would keep you interested?',
+      examples:['Like explaining things? Teaching or comms might click', 'Like building things? Engineering or design might fit', 'Like patterns and numbers? Maybe data, like this course']},
+    {type:'prescriptive', q:'What should be done?', ex:'Which majors match that pattern?',
+      examples:['Look up 2–3 majors and see what classes they take', 'Talk to someone already studying it', 'Try a small project in it before committing']}
+  ],
+  tea: [
+    {type:'descriptive', q:'What happened?', ex:'What sold the most this week?',
+      examples:['Taro Milk Tea sold out by 3pm', 'Weekend sales beat weekdays', 'Classic Milk Tea stayed steady all week']},
+    {type:'diagnostic', q:'Why did it happen?', ex:'Why did the taro sell out early?',
+      examples:["It's the most popular flavor", 'Not enough stock was ordered', 'A weekend rush cleared it out fast']},
+    {type:'predictive', q:'What might happen next?', ex:'What will sell out this weekend?',
+      examples:["Taro will probably sell out again", 'Saturday afternoon will likely be the rush', 'Slower items may sit unsold']},
+    {type:'prescriptive', q:'What should be done?', ex:'Restock taro, add a 4pm shift?',
+      examples:['Order more taro before Friday', 'Add a weekend staff shift', 'Promote a slower seller alongside it']}
+  ]
+};
+
+function renderTypes(key, gridId){
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  analyticsTypes[key].forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'type-card';
+    card.dataset.type = t.type;
+    const list = t.examples.map(e => `<li>${e}</li>`).join('');
+    card.innerHTML = `<span class="tc-q">${t.q}</span><span class="tc-ex">${t.ex}</span><span class="tc-hint">tap for examples →</span><div class="tc-detail"><ul>${list}</ul></div>`;
+    card.addEventListener('click', () => card.classList.toggle('expanded'));
+    grid.appendChild(card);
+  });
+}
+
+const panelMap = { major: { btn: null, panel: 'panelMajor', grid: 'typeGridMajor' }, tea: { btn: null, panel: 'panelTea', grid: 'typeGridTea' } };
+
+document.querySelectorAll('.toggle-row .toggle-btn[data-ex]').forEach(btn => {
+  panelMap[btn.dataset.ex].btn = btn;
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.ex;
+    const info = panelMap[key];
+    const panel = document.getElementById(info.panel);
+    const isOpen = panel.style.display === 'block';
+    if(isOpen){
+      panel.style.display = 'none';
+      btn.classList.remove('active');
+    } else {
+      renderTypes(key, info.grid);
+      panel.style.display = 'block';
+      btn.classList.add('active');
+    }
+  });
+});
+
+const teaData = {
+  orders: {
+    cols: ['Order', 'Time', 'Product', 'Qty', 'Price'],
+    rows: [
+      ['001','9:15 AM','Classic Milk Tea','1','$4.50'],
+      ['002','9:42 AM','Taro Milk Tea','2','$10.00'],
+      ['003','10:05 AM','Brown Sugar Boba','1','$5.50'],
+      ['004','10:30 AM','Taro Milk Tea','1','$5.00'],
+      ['005','11:02 AM','Mango Green Tea','1','$4.75'],
+      ['006','11:47 AM','Taro Milk Tea','1','$5.00'],
+      ['007','12:15 PM','Classic Milk Tea','2','$9.00'],
+      ['008','1:03 PM','Taro Milk Tea','1','$5.00'],
+      ['009','1:40 PM','Thai Tea','1','$4.75'],
+      ['010','2:20 PM','Taro Milk Tea','2','$10.00']
+    ]
+  },
+  daily: {
+    cols: ['Date', 'Transactions', 'Revenue'],
+    rows: [
+      ['Aug 1','42','$189.50'],
+      ['Aug 2','38','$171.00'],
+      ['Aug 3','51','$229.75'],
+      ['Aug 4','47','$211.25'],
+      ['Aug 5','33','$148.50'],
+      ['Aug 6','60','$270.00'],
+      ['Aug 7','55','$247.50'],
+      ['Aug 8','63','$283.50'],
+      ['Aug 9','58','$261.00'],
+      ['Aug 10','45','$202.50']
+    ]
+  },
+  feedback: {
+    cols: ['Date', 'Rating', 'Comment'],
+    rows: [
+      ['Aug 1','5','Taro milk tea is amazing!'],
+      ['Aug 2','4','Great service, a bit sweet'],
+      ['Aug 3','3','Long wait during lunch rush'],
+      ['Aug 4','5','Love the brown sugar boba'],
+      ['Aug 5','2','Ran out of taro by 3pm'],
+      ['Aug 6','4','Friendly staff'],
+      ['Aug 7','5','Best tea shop in town'],
+      ['Aug 8','3','A bit pricey'],
+      ['Aug 9','4','Clean and cozy'],
+      ['Aug 10','5','Taro is my favorite!']
+    ]
+  }
+};
+
+function renderDataTable(key){
+  const d = teaData[key];
+  const table = document.getElementById('dataTable');
+  let html = '<thead><tr>' + d.cols.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+  d.rows.forEach(r => {
+    html += '<tr>' + r.map(v => `<td>${v}</td>`).join('') + '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+document.querySelectorAll('.data-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.data-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderDataTable(btn.dataset.tab);
+  });
+});
+
+renderDataTable('orders');
+
+/* ---------- LEVEL 5 — a month of transactions ---------- */
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rng = mulberry32(42);
+
+const monthProducts = [
+  {name:'Taro Milk Tea', price:5.00, weight:30, color:'var(--lime)'},
+  {name:'Classic Milk Tea', price:4.50, weight:22, color:'var(--blue)'},
+  {name:'Brown Sugar Boba', price:5.50, weight:20, color:'var(--pink)'},
+  {name:'Mango Green Tea', price:4.75, weight:15, color:'var(--yellow)'},
+  {name:'Thai Tea', price:4.75, weight:13, color:'#8a8a94'}
+];
+
+function isWeekendDay(day){
+  const wd = (day - 1) % 7; // 0 = Mon ... 6 = Sun
+  return wd === 5 || wd === 6;
+}
+function pickProduct(){
+  const total = monthProducts.reduce((s,p) => s + p.weight, 0);
+  let r = rng() * total;
+  for(const p of monthProducts){
+    if(r < p.weight) return p;
+    r -= p.weight;
+  }
+  return monthProducts[0];
+}
+function randTime(){
+  const hour = 8 + Math.floor(rng() * 12);
+  const minute = Math.floor(rng() * 60);
+  const period = hour < 12 ? 'AM' : 'PM';
+  let h12 = hour % 12; if(h12 === 0) h12 = 12;
+  return h12 + ':' + String(minute).padStart(2,'0') + ' ' + period;
+}
+
+const monthRows = [];
+const productTotals = {};
+monthProducts.forEach(p => productTotals[p.name] = 0);
+let weekdayTx = 0, weekendTx = 0, weekdayDays = 0, weekendDays = 0;
+
+for(let day = 1; day <= 30; day++){
+  const weekend = isWeekendDay(day);
+  const count = weekend ? (14 + Math.floor(rng() * 7)) : (8 + Math.floor(rng() * 6));
+  if(weekend){ weekendDays++; weekendTx += count; } else { weekdayDays++; weekdayTx += count; }
+  const tag = weekend ? (((day - 1) % 7 === 5) ? ' (Sat)' : ' (Sun)') : '';
+  for(let i = 0; i < count; i++){
+    const p = pickProduct();
+    const qty = rng() < 0.7 ? 1 : 2;
+    productTotals[p.name] += qty;
+    monthRows.push(['Day ' + day + tag, randTime(), p.name, String(qty), '$' + (p.price * qty).toFixed(2)]);
+  }
+}
+
+function renderMonthTable(){
+  const table = document.getElementById('monthTable');
+  let html = '<thead><tr><th>Day</th><th>Time</th><th>Product</th><th>Qty</th><th>Price</th></tr></thead><tbody>';
+  monthRows.forEach(r => {
+    html += '<tr>' + r.map(v => '<td>' + v + '</td>').join('') + '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+renderMonthTable();
+
+function renderMonthChart(){
+  const sorted = monthProducts
+    .map(p => ({name: p.name, total: productTotals[p.name], color: p.color}))
+    .sort((a, b) => b.total - a.total);
+  const max = sorted[0].total;
+  let html = '';
+  sorted.forEach(s => {
+    const pct = Math.round(s.total / max * 100);
+    html += `<div class="bar-row"><span class="bar-label">${s.name}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${s.color}"></div></div><span class="bar-value">${s.total}</span></div>`;
+  });
+  document.getElementById('monthChart').innerHTML = html;
+
+  const avgWeekday = (weekdayTx / weekdayDays).toFixed(1);
+  const avgWeekend = (weekendTx / weekendDays).toFixed(1);
+  const pctMore = Math.round((avgWeekend / avgWeekday - 1) * 100);
+  document.getElementById('weekendStat').textContent =
+    'Weekends average ' + avgWeekend + ' orders/day vs ' + avgWeekday + ' on weekdays — about ' + pctMore + '% more.';
+}
+
+document.getElementById('revealChartBtn').addEventListener('click', () => {
+  renderMonthChart();
+  document.getElementById('chartReveal').style.display = 'block';
+  const btn = document.getElementById('revealChartBtn');
+  btn.textContent = '📊 Pattern revealed ↓';
+});
+
+/* ---------- LEVEL 7 — how to succeed ---------- */
+document.getElementById('revealSuccessBtn').addEventListener('click', () => {
+  const grid = document.getElementById('successGrid');
+  const btn = document.getElementById('revealSuccessBtn');
+  const isOpen = grid.style.display === 'grid';
+  if(isOpen){
+    grid.style.display = 'none';
+    btn.textContent = '🔓 Show me';
+  } else {
+    grid.style.display = 'grid';
+    btn.textContent = '🎉 Got it →';
+  }
+});
+document.querySelectorAll('.decision-card').forEach(card => {
+  card.addEventListener('click', () => {
+    card.classList.toggle('selected');
+  });
+});
+</script>
+
+</body>
+</html>
