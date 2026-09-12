@@ -392,16 +392,6 @@
 </div>
 
 <script>
-const imgData = {
-  toilet_sign: 'https://upload.wikimedia.org/wikipedia/commons/9/9e/Toilet_paper_orientation_unisex_restroom_sign.svg',
-  stop_red: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Stop_sign_MUTCD.svg',
-  stop_green: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Stop_sign_MUTCD.svg',
-  caution_yellow: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Warning_icon.svg',
-  caution_green: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Warning_icon.svg',
-  weather_storm: 'https://upload.wikimedia.org/wikipedia/commons/9/9e/Toilet_paper_orientation_unisex_restroom_sign.svg',
-  world_births: 'https://upload.wikimedia.org/wikipedia/commons/9/9e/Toilet_paper_orientation_unisex_restroom_sign.svg',
-};
-
 document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('hello').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -498,13 +488,19 @@ function renderPercGrid(){
 renderPercGrid();
 
 /* ---- modal content builders ---- */
+function stopSignSvg(){
+  return `<svg width="150" height="150" viewBox="0 0 100 100" role="img" aria-label="Stop sign">
+    <polygon id="stopShape" points="29,4 71,4 96,29 96,71 71,96 29,96 4,71 4,29" fill="#e0405a" stroke="#14141a" stroke-width="3"/>
+    <text x="50" y="58" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-weight="700" font-size="20" fill="#ffffff">STOP</text>
+  </svg>`;
+}
 function stopModalHtml(){
   return `
     <h3>Red stop sign 🛑</h3>
     <p class="modal-sub">Same shape, same word — only the color changed.</p>
-    <div class="modal-img-row single" id="stopImgRow">
+    <div class="modal-img-row single" style="justify-content:center;">
       <div style="text-align:center;">
-        <img src="${imgData.stop_red}" alt="Red stop sign" id="stopImg">
+        ${stopSignSvg()}
         <span class="img-label" id="stopImgLabel">RED — this is what a real stop sign looks like</span>
       </div>
     </div>
@@ -516,29 +512,35 @@ function stopModalHtml(){
   `;
 }
 function wireStopModal(){
-  const img = document.getElementById('stopImg');
+  const shape = document.getElementById('stopShape');
   const label = document.getElementById('stopImgLabel');
   const redBtn = document.getElementById('stopToggleRed');
   const greenBtn = document.getElementById('stopToggleGreen');
   redBtn.addEventListener('click', () => {
-    img.style.filter = 'none';
+    shape.setAttribute('fill', '#e0405a');
     label.textContent = 'RED — this is what a real stop sign looks like';
     redBtn.classList.add('active'); greenBtn.classList.remove('active');
   });
   greenBtn.addEventListener('click', () => {
-    img.style.filter = 'hue-rotate(120deg)';
+    shape.setAttribute('fill', '#2f9e6f');
     label.textContent = 'GREEN — same shape, same word, no urgency left';
     greenBtn.classList.add('active'); redBtn.classList.remove('active');
   });
 }
 
+function cautionSignSvg(){
+  return `<svg width="150" height="138" viewBox="0 0 100 92" role="img" aria-label="Caution sign">
+    <polygon id="cautionShape" points="50,6 96,86 4,86" fill="#ffc328" stroke="#14141a" stroke-width="3" stroke-linejoin="round"/>
+    <text x="50" y="66" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-weight="700" font-size="34" fill="#14141a">!</text>
+  </svg>`;
+}
 function cautionModalHtml(){
   return `
     <h3>Yellow caution sign ⚠️</h3>
     <p class="modal-sub">Same triangle, same exclamation mark — only the color changed.</p>
-    <div class="modal-img-row single" id="cautionImgRow">
+    <div class="modal-img-row single" style="justify-content:center;">
       <div style="text-align:center;">
-        <img src="${imgData.caution_yellow}" alt="Yellow caution sign" id="cautionImg">
+        ${cautionSignSvg()}
         <span class="img-label" id="cautionImgLabel">YELLOW — slow down, pay attention</span>
       </div>
     </div>
@@ -550,17 +552,17 @@ function cautionModalHtml(){
   `;
 }
 function wireCautionModal(){
-  const img = document.getElementById('cautionImg');
+  const shape = document.getElementById('cautionShape');
   const label = document.getElementById('cautionImgLabel');
   const yellowBtn = document.getElementById('cautionToggleYellow');
   const greenBtn = document.getElementById('cautionToggleGreen');
   yellowBtn.addEventListener('click', () => {
-    img.style.filter = 'none';
+    shape.setAttribute('fill', '#ffc328');
     label.textContent = 'YELLOW — slow down, pay attention';
     yellowBtn.classList.add('active'); greenBtn.classList.remove('active');
   });
   greenBtn.addEventListener('click', () => {
-    img.style.filter = 'hue-rotate(160deg)';
+    shape.setAttribute('fill', '#2f9e6f');
     label.textContent = 'GREEN — reads as "info," not "caution"';
     greenBtn.classList.add('active'); yellowBtn.classList.remove('active');
   });
@@ -570,24 +572,65 @@ function weatherModalHtml(){
   return `
     <h3>Weather forecast ⛈️</h3>
     <p class="modal-sub">When a storm is coming, you read the color scale before you read a single label.</p>
-    <div class="modal-note">Radar maps use a green → yellow → orange → red scale for rain intensity. Green is light rain, red is a downpour. You don't need to know the exact rainfall number for a city — the color alone tells you it's the worst spot on the map <b>before you read the city name.</b> Same idea as the stop sign, just with more steps on the scale.</div>
+    <div style="margin:0 0 14px;">
+      <svg width="100%" height="72" viewBox="0 0 400 72" preserveAspectRatio="none" role="img" aria-label="Rain intensity color scale from green to red">
+        <defs>
+          <linearGradient id="rainScale" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#2f9e6f"/>
+            <stop offset="33%" stop-color="#ffc328"/>
+            <stop offset="66%" stop-color="#ff9a2f"/>
+            <stop offset="100%" stop-color="#e0405a"/>
+          </linearGradient>
+        </defs>
+        <rect x="0" y="8" width="400" height="28" rx="6" fill="url(#rainScale)"/>
+        <text x="8" y="58" font-family="'JetBrains Mono',monospace" font-size="11" fill="#6c6c76">Light</text>
+        <text x="150" y="58" font-family="'JetBrains Mono',monospace" font-size="11" fill="#6c6c76">Moderate</text>
+        <text x="290" y="58" font-family="'JetBrains Mono',monospace" font-size="11" fill="#6c6c76">Heavy</text>
+        <text x="362" y="58" font-family="'JetBrains Mono',monospace" font-size="11" fill="#6c6c76">Severe</text>
+      </svg>
+    </div>
+    <div class="modal-note">This is the same scale every weather app uses: green → yellow → orange → red for rain intensity. Green is light rain, red is a downpour. You don't need to know the exact rainfall number for a city — the color alone tells you it's the worst spot on the map <b>before you read the city name.</b> Same idea as the stop sign, just with more steps on the scale.</div>
   `;
 }
 
 function birthsModalHtml(){
+  const bigR = 68, smallR = Math.round(bigR * Math.sqrt(552000 / 23100000));
   return `
     <h3>World births in 2025 🌍</h3>
     <p class="modal-sub">This time it's not color doing the work — it's size.</p>
-    <div class="modal-note">Picture a map where every country gets a shape sized to its number of births. Every shape can be the same color — no color-coding by danger or severity. But you can still tell India (23.1M) matters more than Nepal (552K) instantly — <b>because the shape for India is enormous and Nepal's is tiny.</b> Size alone can carry "how much," the same way color alone carried "how dangerous" in the stop sign.</div>
+    <div style="display:flex;align-items:flex-end;justify-content:center;gap:26px;margin-bottom:14px;">
+      <div style="text-align:center;">
+        <svg width="150" height="150" viewBox="0 0 150 150" role="img" aria-label="Large circle representing India's births">
+          <circle cx="75" cy="75" r="${bigR}" fill="#ff3d94" opacity="0.85"/>
+        </svg>
+        <div class="img-label">India — 23.1M</div>
+      </div>
+      <div style="text-align:center;">
+        <svg width="60" height="150" viewBox="0 0 60 150" role="img" aria-label="Small circle representing Nepal's births">
+          <circle cx="30" cy="${150 - smallR - 6}" r="${smallR}" fill="#ff3d94" opacity="0.85"/>
+        </svg>
+        <div class="img-label">Nepal — 552K</div>
+      </div>
+    </div>
+    <div class="modal-note">Both circles are the exact same color — no color-coding by danger or severity at all. But you can still tell India matters more than Nepal instantly — <b>because the shape for India is enormous and Nepal's is tiny.</b> Size alone can carry "how much," the same way color alone carried "how dangerous" in the stop sign.</div>
+    <div class="modal-source">Circle areas are drawn proportional to each country's 2025 estimated births.</div>
   `;
 }
 
+function restroomSvg(){
+  return `<svg width="140" height="150" viewBox="0 0 140 150" role="img" aria-label="Restroom pictogram, one figure in pants and one figure in a dress">
+    <circle cx="35" cy="22" r="12" fill="#14141a"/>
+    <polygon points="35,36 15,90 25,90 25,140 45,140 45,90 55,90" fill="#14141a"/>
+    <circle cx="105" cy="22" r="12" fill="#14141a"/>
+    <path d="M105,36 L80,110 L95,110 L95,140 L115,140 L115,110 L130,110 Z" fill="#14141a"/>
+  </svg>`;
+}
 function mysteryModalHtml(){
   return `
     <h3>Guess this sign 🕵️</h3>
     <p class="modal-sub">No color here at all — just two black silhouettes. What sign does this remind you of?</p>
-    <div class="modal-img-row single">
-      <img src="${imgData.toilet_sign}" alt="Two black silhouettes, one in pants, one in a dress">
+    <div class="modal-img-row single" style="justify-content:center;">
+      ${restroomSvg()}
     </div>
     <div class="modal-toggle-row">
       <button class="toggle-btn" id="mysteryRevealBtn">Reveal the answer</button>
