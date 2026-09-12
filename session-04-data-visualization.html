@@ -470,8 +470,8 @@ document.querySelectorAll('.toggle-row .toggle-btn[data-view]').forEach(btn => {
 const percItems = [
   {ico:'🛑', key:'stop', title:'Red stop sign', hint:'tap to compare colors →'},
   {ico:'⚠️', key:'caution', title:'Yellow caution sign', hint:'tap to compare colors →'},
-  {ico:'⛈️', key:'weather', title:'Weather forecast', hint:'tap to see the scale →'},
-  {ico:'🌍', key:'births', title:'World births 2025', hint:'tap to see size at work →'},
+  {ico:'⛈️', key:'weather', title:'Weather forecast', hint:'opens the real example ↗', link:'https://chyron.com/how-to-reimagine-your-weather-graphics-with-chyron-weather/'},
+  {ico:'🌍', key:'births', title:'World births 2025', hint:'opens the real example ↗', link:'https://www.visualcapitalist.com/worlds-births-2025-by-country-giant-chart/'},
   {ico:'🕵️', key:'mystery', title:'Guess this sign', hint:'tap to take a guess →'}
 ];
 function renderPercGrid(){
@@ -481,7 +481,11 @@ function renderPercGrid(){
     const card = document.createElement('div');
     card.className = 'perc-card';
     card.innerHTML = `<span class="pc-ico">${item.ico}</span><span class="pc-title">${item.title}</span><span class="pc-hint">${item.hint}</span>`;
-    card.addEventListener('click', () => openPercModal(item.key));
+    if(item.link){
+      card.addEventListener('click', () => window.open(item.link, '_blank', 'noopener'));
+    } else {
+      card.addEventListener('click', () => openPercModal(item.key));
+    }
     grid.appendChild(card);
   });
 }
@@ -568,55 +572,6 @@ function wireCautionModal(){
   });
 }
 
-function weatherModalHtml(){
-  return `
-    <h3>Weather forecast ⛈️</h3>
-    <p class="modal-sub">When a storm is coming, you read the color scale before you read a single label.</p>
-    <div style="margin:0 0 14px;">
-      <svg width="100%" height="72" viewBox="0 0 400 72" preserveAspectRatio="none" role="img" aria-label="Rain intensity color scale from green to red">
-        <defs>
-          <linearGradient id="rainScale" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="#2f9e6f"/>
-            <stop offset="33%" stop-color="#ffc328"/>
-            <stop offset="66%" stop-color="#ff9a2f"/>
-            <stop offset="100%" stop-color="#e0405a"/>
-          </linearGradient>
-        </defs>
-        <rect x="0" y="8" width="400" height="28" rx="6" fill="url(#rainScale)"/>
-        <text x="8" y="58" font-family="'JetBrains Mono',monospace" font-size="11" fill="#6c6c76">Light</text>
-        <text x="150" y="58" font-family="'JetBrains Mono',monospace" font-size="11" fill="#6c6c76">Moderate</text>
-        <text x="290" y="58" font-family="'JetBrains Mono',monospace" font-size="11" fill="#6c6c76">Heavy</text>
-        <text x="362" y="58" font-family="'JetBrains Mono',monospace" font-size="11" fill="#6c6c76">Severe</text>
-      </svg>
-    </div>
-    <div class="modal-note">This is the same scale every weather app uses: green → yellow → orange → red for rain intensity. Green is light rain, red is a downpour. You don't need to know the exact rainfall number for a city — the color alone tells you it's the worst spot on the map <b>before you read the city name.</b> Same idea as the stop sign, just with more steps on the scale.</div>
-  `;
-}
-
-function birthsModalHtml(){
-  const bigR = 68, smallR = Math.round(bigR * Math.sqrt(552000 / 23100000));
-  return `
-    <h3>World births in 2025 🌍</h3>
-    <p class="modal-sub">This time it's not color doing the work — it's size.</p>
-    <div style="display:flex;align-items:flex-end;justify-content:center;gap:26px;margin-bottom:14px;">
-      <div style="text-align:center;">
-        <svg width="150" height="150" viewBox="0 0 150 150" role="img" aria-label="Large circle representing India's births">
-          <circle cx="75" cy="75" r="${bigR}" fill="#ff3d94" opacity="0.85"/>
-        </svg>
-        <div class="img-label">India — 23.1M</div>
-      </div>
-      <div style="text-align:center;">
-        <svg width="60" height="150" viewBox="0 0 60 150" role="img" aria-label="Small circle representing Nepal's births">
-          <circle cx="30" cy="${150 - smallR - 6}" r="${smallR}" fill="#ff3d94" opacity="0.85"/>
-        </svg>
-        <div class="img-label">Nepal — 552K</div>
-      </div>
-    </div>
-    <div class="modal-note">Both circles are the exact same color — no color-coding by danger or severity at all. But you can still tell India matters more than Nepal instantly — <b>because the shape for India is enormous and Nepal's is tiny.</b> Size alone can carry "how much," the same way color alone carried "how dangerous" in the stop sign.</div>
-    <div class="modal-source">Circle areas are drawn proportional to each country's 2025 estimated births.</div>
-  `;
-}
-
 function restroomSvg(){
   return `<svg width="140" height="150" viewBox="0 0 140 150" role="img" aria-label="Restroom pictogram, one figure in pants and one figure in a dress">
     <circle cx="35" cy="22" r="12" fill="#14141a"/>
@@ -642,8 +597,6 @@ function mysteryModalHtml(){
 const percModalBuilders = {
   stop: {html: stopModalHtml, wire: wireStopModal},
   caution: {html: cautionModalHtml, wire: wireCautionModal},
-  weather: {html: weatherModalHtml, wire: null},
-  births: {html: birthsModalHtml, wire: null},
   mystery: {html: mysteryModalHtml, wire: wireMysteryModal}
 };
 
