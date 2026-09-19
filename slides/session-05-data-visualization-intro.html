@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 05 — Numbers Into Pictures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* palette — bg #fafaf6 · panel #ffffff · ink #14141a · lime #a4d925 · pink #ff3d94 · blue #2f7dff · yellow #ffc328
+     type — Space Grotesk (display) · Inter (body) · JetBrains Mono (HUD / labels)
+     kept identical to Sessions 01-02 on purpose — same field-notebook system across all 12 sessions */
+  :root{
+    --bg:#fafaf6; --panel:#ffffff; --panel2:#f2f2ea; --line:#1c1c22; --ink:#14141a; --muted:#6c6c76;
+    --lime:#a4d925; --pink:#ff3d94; --blue:#2f7dff; --yellow:#ffc328; --lime-deep:#5c7a17; --red:#e0405a; --green:#2f9e6f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+  #hello{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;padding:24px;}
+  #hello .badge{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:6px 14px;border-radius:20px;}
+  #hello h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(32px,7vw,60px);margin:0;line-height:1.12;color:var(--ink);}
+  #hello h1 span{color:var(--pink);}
+  #hello p.sub{font-size:16px;color:var(--muted);max-width:50ch;margin:0;}
+  .start-btn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--ink);background:var(--lime);border:2px solid var(--ink);padding:16px 36px;border-radius:40px;cursor:pointer;box-shadow:0 6px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;}
+  .start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink);}
+  .start-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+
+  #app{display:none;max-width:1060px;margin:0 auto;padding:28px 22px 70px;}
+  .hud-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .hud-top .tag{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .xp-bar{flex:1;height:8px;background:var(--panel2);border-radius:6px;margin:0 16px;overflow:hidden;}
+  .xp-fill{height:100%;width:14%;background:linear-gradient(90deg,var(--blue),var(--lime));transition:width .3s ease;}
+  .xp-count{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink);white-space:nowrap;}
+
+  .levels{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;}
+  .lvl{flex:1;min-width:104px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12.5px;text-align:center;padding:11px 6px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;transition:transform .12s ease, border-color .12s ease, color .12s ease;}
+  .lvl small{display:block;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:10px;letter-spacing:.08em;margin-bottom:3px;opacity:.8;}
+  .lvl:hover{transform:translateY(-2px);}
+  .lvl.active{color:var(--ink);}
+  .lvl[data-lvl="1"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="2"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="3"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl[data-lvl="4"].active{background:var(--yellow);border-color:var(--yellow);}
+  .lvl[data-lvl="5"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="6"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="7"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+
+  .stage{background:var(--panel);border:2px solid var(--line);border-radius:20px;padding:30px 26px 34px;}
+  .page{display:none;}
+  .page.active{display:block;animation:pop .22s ease;}
+  @keyframes pop{from{opacity:0;transform:scale(.98);}to{opacity:1;transform:scale(1);}}
+  .page h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(22px,4vw,32px);margin:0 0 8px;}
+  .page .lede{font-size:15.5px;color:var(--muted);max-width:66ch;margin:0 0 20px;}
+  .section-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;}
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;}
+  .chip{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:11px 15px;font-size:14px;font-weight:600;}
+  .chip .ico{font-size:19px;}
+
+  .hook{margin-top:18px;background:rgba(47,125,255,0.08);border:1px solid var(--blue);border-radius:14px;padding:15px 18px;}
+  .hook .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;}
+  .hook p{margin:0;font-size:14.5px;font-weight:500;}
+
+  .mission{background:rgba(255,195,40,0.18);border:1px solid var(--yellow);border-radius:14px;padding:14px 18px;margin-bottom:16px;}
+  .mission .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8a6a00;margin-bottom:6px;}
+  .mission p{margin:0;font-size:14.5px;font-weight:600;}
+
+  .discuss{margin-top:18px;background:rgba(164,217,37,0.14);border:1px solid var(--lime);border-radius:14px;padding:15px 18px;}
+  .discuss .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--lime-deep);margin-bottom:6px;}
+  .discuss p{margin:0;font-size:14.5px;font-weight:500;}
+
+  .sheets-cue{margin-top:18px;background:rgba(47,158,111,0.10);border:1px solid var(--green);border-radius:14px;padding:15px 18px;}
+  .sheets-cue .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:6px;}
+  .sheets-cue p{margin:0;font-size:14.5px;font-weight:600;}
+  .sheets-cue a{color:var(--green);}
+
+  .gotcha{margin-top:18px;background:rgba(224,64,90,0.08);border:1px solid var(--red);border-radius:14px;padding:15px 18px;}
+  .gotcha .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-bottom:6px;}
+  .gotcha p{margin:0;font-size:14.5px;font-weight:500;}
+
+  /* ---- reference table ---- */
+  .data-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;margin:6px 0;}
+  table.data-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px;min-width:520px;}
+  table.data-table th{background:var(--panel2);text-align:left;padding:9px 10px;border-bottom:2px solid var(--line);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+  table.data-table td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  table.data-table tr:nth-child(even) td{background:var(--panel2);}
+  table.data-table tr.total-row td{background:var(--ink) !important;color:#fff;font-weight:700;}
+  .verified-tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--green);margin:6px 0 4px;}
+
+  /* ---- level 1: bar reveal ---- */
+  .barchart{display:flex;flex-direction:column;gap:10px;margin-top:6px;}
+  .bar-row{display:grid;grid-template-columns:130px 1fr 96px;align-items:center;gap:10px;}
+  .bar-row .bar-label{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;}
+  .bar-track{background:var(--panel2);border:1px solid var(--line);border-radius:8px;height:26px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:7px 0 0 7px;transition:width .5s ease;}
+  .bar-row .bar-val{font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right;color:var(--ink);font-weight:600;}
+  .reveal-toggle{margin-top:16px;}
+
+  /* ---- level 2 & other click cards ---- */
+  .qq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;align-items:start;}
+  .qq-card{border:2px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;transition:background .12s ease;}
+  .qq-card .qq-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;margin-bottom:4px;}
+  .qq-card .qq-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+  .qq-card .qq-a{display:none;font-size:13.5px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);line-height:1.55;}
+  .qq-card .qq-a b{color:var(--ink);}
+  .qq-card.revealed{background:var(--panel2);border-color:var(--lime);}
+  .qq-card.revealed .qq-a{display:block;}
+  .qq-card.revealed .qq-hint{display:none;}
+
+  /* ---- level 3: pie mockups ---- */
+  .pie-compare{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start;margin:14px 0 6px;}
+  .pie-block{flex:1;min-width:220px;text-align:center;}
+  .pie-block .pie-title{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px;}
+  .pie-block.bad .pie-title{color:var(--red);}
+  .pie-block.good .pie-title{color:var(--green);}
+  .pie-svg-wrap{width:180px;height:180px;margin:0 auto;border-radius:50%;}
+
+  /* ---- process / mini flow ---- */
+  .mini-flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:16px 0 20px;}
+  .mf-step{flex:1;min-width:150px;background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:10px 12px;text-align:center;}
+  .mf-step .mf-no{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--muted);display:block;}
+  .mf-step .mf-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;}
+  .mf-arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px;padding:0 4px;flex:0 0 auto;}
+  @media (max-width:640px){ .mini-flow{flex-direction:column;} .mf-arrow{transform:rotate(90deg);padding:2px 0;} }
+
+  /* ---- task cards ---- */
+  .task-grid{display:flex;flex-direction:column;gap:14px;}
+  .task-card{border:2px solid var(--line);border-radius:16px;padding:18px 20px;cursor:pointer;transition:background .12s ease;}
+  .task-card.expanded{background:var(--panel2);}
+  .task-head{display:flex;align-items:flex-start;gap:12px;}
+  .task-no{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:#fff;background:var(--ink);width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .task-card[data-t="1"] .task-no{background:var(--pink);}
+  .task-card[data-t="2"] .task-no{background:var(--blue);}
+  .task-card[data-t="3"] .task-no{background:var(--lime-deep);}
+  .task-card[data-t="4"] .task-no{background:var(--red);}
+  .task-title-block{flex:1;}
+  .task-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;display:block;}
+  .task-sub{font-size:12.5px;color:var(--muted);display:block;margin-top:2px;}
+  .task-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;align-self:center;}
+  .task-detail{display:none;margin-top:16px;padding-top:16px;border-top:1px dashed var(--line);}
+  .task-card.expanded .task-detail{display:block;}
+  .task-card.expanded .task-hint{display:none;}
+
+  .field-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .field-tag{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:8px;background:rgba(47,125,255,0.1);color:var(--blue);}
+  .field-tag.val{background:rgba(164,217,37,0.18);color:var(--lime-deep);}
+
+  .step-label{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:12px 0 5px;}
+  .step-box{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:var(--ink);color:#e8f7d0;border-radius:10px;padding:10px 14px;margin-bottom:6px;line-height:1.6;}
+  .task-note{font-size:13px;color:var(--ink);line-height:1.55;margin:8px 0;}
+  .task-note b{color:var(--ink);}
+
+  .your-turn{background:rgba(47,125,255,0.07);border:1px solid var(--blue);border-radius:10px;padding:10px 14px;margin-top:10px;font-size:13px;}
+  .your-turn .yt-tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);font-weight:700;margin-bottom:4px;display:block;}
+
+  .stuck-toggle{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--muted);border:1px dashed var(--line);border-radius:20px;padding:6px 12px;display:inline-block;cursor:pointer;margin-top:10px;}
+  .stuck-reveal{display:none;margin-top:10px;}
+  .stuck-reveal.open{display:block;}
+
+  .task-detail ol, .task-detail ul{margin:6px 0 0;padding-left:18px;}
+  .task-detail li{font-size:13px;margin-bottom:7px;line-height:1.55;}
+
+  /* ---- recap ---- */
+  .recap-statement{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(19px,3.4vw,26px);line-height:1.35;margin:6px 0 22px;}
+  .recap-statement .hl-pink{color:var(--pink);}
+  .recap-statement .hl-blue{color:var(--blue);}
+  .recap-statement .hl-yellow{color:#8a6a00;}
+  .success-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px;}
+  .success-card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;}
+  .success-card .sc-ico{font-size:22px;display:block;margin-bottom:4px;}
+  .success-card .sc-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13.5px;display:block;margin-bottom:3px;}
+  .success-card .sc-detail{font-size:11.5px;color:var(--muted);}
+  .next-tag{margin-top:20px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;}
+  .next-tag b{color:var(--lime-deep);}
+
+  @media (max-width:560px){ .lvl{min-width:100%;} .bar-row{grid-template-columns:96px 1fr 76px;} }
+</style>
+</head>
+<body>
+
+<div id="hello">
+  <div class="badge">Session 05</div>
+  <h1>You've got the numbers.<br>Now make them <span>obvious</span>.</h1>
+  <p class="sub">Why a chart lands in two seconds when a table takes two minutes — then you build all three charts yourself, starting from a pivot table you build in Google Sheets.</p>
+  <button class="start-btn" id="startBtn">Let's go ▶</button>
+</div>
+
+<div id="app">
+
+  <div class="hud-top">
+    <span class="tag">Progress</span>
+    <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+    <span class="xp-count" id="xpCount">LVL 1 / 5</span>
+  </div>
+
+  <div class="levels">
+    <div class="lvl active" data-lvl="1"><small>L1</small>Spot It 🔍</div>
+    <div class="lvl" data-lvl="2"><small>L2</small>4 Charts 📊</div>
+    <div class="lvl" data-lvl="3"><small>L3</small>Bad Call ⚠️</div>
+    <div class="lvl" data-lvl="4"><small>L4</small>Boss Asks 💼</div>
+    <div class="lvl" data-lvl="5"><small>L5</small>Recap 🎉</div>
+  </div>
+
+  <div class="mission">
+    <div class="dl">Your role today</div>
+    <p>You're the data analyst on a global bike manufacturer's team. Every table and chart in this session runs off the company's real five-year sales file — the same file every "boss" question in Level 4 is actually about.</p>
+  </div>
+  <div class="chip-row">
+    <a class="chip" href="https://drive.google.com/drive/folders/1ZDi4LtfixXfqXV11qZv9OxLoeOVaYcvK?usp=drive_link" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;"><span class="ico">📂</span>Open the shared dataset</a>
+  </div>
+
+  <div class="stage">
+
+    <!-- LEVEL 1 — SPOT THE PATTERN (answers "why does a chart work when a table doesn't") -->
+    <div class="page active" id="page-1">
+      <h2>Same numbers. Try it as a chart. 🔍</h2>
+      <p class="lede">Here's total revenue by country, laid out as a normal table. Take a few seconds with it before you scroll on.</p>
+
+      <div class="data-table-wrap">
+        <table class="data-table" id="countryTable"></table>
+      </div>
+
+      <div class="hook">
+        <div class="dl">Quick question</div>
+        <p>Just from that table: which country made the most revenue, and roughly how much more than the smallest one? Don't scroll back and forth counting digits — notice how long that actually takes.</p>
+      </div>
+
+      <div class="reveal-toggle">
+        <button class="start-btn" style="font-size:15px;padding:12px 24px;box-shadow:0 5px 0 var(--ink);" id="revealBarBtn">👀 Show me as a chart</button>
+      </div>
+
+      <div id="barReveal" style="display:none;margin-top:18px;">
+        <div class="barchart" id="barchartBox"></div>
+        <div class="discuss">
+          <div class="dl">Notice</div>
+          <p>The chart is sorted biggest to smallest — the table isn't. That's not an accident. Sorting bars by size is one of the cheapest upgrades you can make to almost any chart, and it's the first thing your eye wants anyway. That gap between "read the table" and "see it instantly" is the entire reason data visualization exists.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 — FOUR CHART TYPES -->
+    <div class="page" id="page-2">
+      <h2>Four charts cover almost everything 📊</h2>
+      <p class="lede">Tap each one for when to reach for it — and a quick example of it in action.</p>
+
+      <div class="qq-grid" id="chartTypeGrid"></div>
+    </div>
+
+    <!-- LEVEL 3 — RIGHT CHART, WRONG CHOICE -->
+    <div class="page" id="page-3">
+      <h2>The same chart type can be right and wrong ⚠️</h2>
+      <p class="lede">A pie chart isn't a bad idea by itself. It becomes one the moment you ask it to hold too much.</p>
+
+      <div class="pie-compare">
+        <div class="pie-block good">
+          <div class="pie-title">✅ 4 slices — readable</div>
+          <div class="pie-svg-wrap" id="pieGood"></div>
+          <p style="font-size:12.5px;color:var(--muted);margin-top:8px;">Revenue by Age Group</p>
+        </div>
+        <div class="pie-block bad">
+          <div class="pie-title">🚩 18 slices — not readable</div>
+          <div class="pie-svg-wrap" id="pieBad"></div>
+          <p style="font-size:12.5px;color:var(--muted);margin-top:8px;">Revenue by Country × Product</p>
+        </div>
+      </div>
+
+      <div class="gotcha">
+        <div class="dl">🚩 The rule</div>
+        <p>More than 5–6 slices and a pie chart stops being readable — your eye can't rank tiny angles that are close in size. Switch to a bar chart instead: it can hold 20 categories and stay legible, because you're comparing bar length, not the angle of a wedge.</p>
+      </div>
+
+      <div class="your-turn">
+        <span class="yt-tag">Your turn</span>
+        Look at the "bad" pie above. Which slice is bigger — the 3rd biggest or the 4th biggest? If you can't tell without hovering, that's the whole problem, right there.
+      </div>
+    </div>
+
+    <!-- LEVEL 4 — BOSS ASKS (independent practice: inspect, clean, analyze, visualize, present) -->
+    <div class="page" id="page-4">
+      <h2>Four questions your boss would actually ask 💼</h2>
+      <p class="lede">No pivot fields, no chart type, no click-by-click steps this time. Just the question and the process. You pick the pivot, the chart, and the story — using what you learned in the last two levels.</p>
+
+      <div class="task-grid" id="bossTaskGrid" style="margin-top:20px;"></div>
+
+      <div class="section-tag" style="margin-top:20px;">Definition of done — every chart, every time</div>
+      <div class="chip-row">
+        <div class="chip"><span class="ico">🏷️</span>A real chart title, not "Chart title"</div>
+        <div class="chip"><span class="ico">📏</span>Both axes labeled, if the chart has axes</div>
+        <div class="chip"><span class="ico">🔑</span>A legend that's actually readable</div>
+        <div class="chip"><span class="ico">💲</span>Dollar values formatted as currency, not raw numbers</div>
+        <div class="chip"><span class="ico">🗣️</span>One sentence you can say out loud that answers the question</div>
+      </div>
+
+      <div class="discuss" style="margin-top:18px;">
+        <div class="dl">Free sanity check</div>
+        <p>Tasks 1–3 are all Sum of Revenue, so their Grand Totals should land on the exact same number — <b>$95,176,318</b>. Task 4 is built on Sum of Profit instead, so its Grand Total should be <b>$42,126,410</b>, not the revenue number — landing on $95,176,318 there means you pivoted the wrong field. If any total doesn't match its expected number, you filtered something out, picked COUNT instead of SUM, or pointed a pivot at the wrong range.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 5 — RECAP -->
+    <div class="page" id="page-5">
+      <h2>That's today 🎉</h2>
+
+      <p class="recap-statement">Pick the chart that fits the <span class="hl-pink">question</span>, not the one that looks fanciest — build the <span class="hl-blue">pivot table</span> before you ever open the chart menu — and know where <span class="hl-yellow">Sheets and Excel</span> quietly do things differently.</p>
+
+      <div class="chip-row">
+        <div class="chip"><span class="ico">📊</span>Bar/column = compare categories</div>
+        <div class="chip"><span class="ico">📈</span>Line = change over time</div>
+        <div class="chip"><span class="ico">🥧</span>Pie = a few shares of one whole</div>
+        <div class="chip"><span class="ico">🔬</span>Scatter = do two numbers move together</div>
+      </div>
+
+      <div class="section-tag" style="margin-top:24px;">Quick recall</div>
+      <p style="font-size:16.5px;font-weight:600;">Revenue grew from $10.3M in 2017 to $29.7M in 2021 — but 2019 actually dipped in both revenue and profit before rebounding. The United States and Australia alone are almost 60% of all revenue. Adults (35–64) are about half of revenue by themselves. And a scatter chart is the one type a pivot table can't feed you — it needs raw order rows, not totals.</p>
+
+      <div class="reveal-toggle">
+        <button class="start-btn" style="font-size:15px;padding:12px 24px;box-shadow:0 5px 0 var(--ink);" id="revealSuccessBtn">🔑 What carries into next session</button>
+      </div>
+      <div class="success-grid" id="successGrid" style="display:none;margin-top:16px;">
+        <div class="success-card"><span class="sc-ico">🧮</span><span class="sc-title">Pivot-first habit</span><span class="sc-detail">build the summary table before you ever touch the chart menu</span></div>
+        <div class="success-card"><span class="sc-ico">📊</span><span class="sc-title">3 real charts</span><span class="sc-detail">line, column, and pie — all built from your own pivot tables today</span></div>
+        <div class="success-card"><span class="sc-ico">🚩</span><span class="sc-title">A rule you can defend</span><span class="sc-detail">why a pie chart with 18 slices is a bad idea, not just an ugly one</span></div>
+      </div>
+
+      <div class="next-tag">Next → same three moves — pivot table first, pick the chart that fits the question, then build it — but on a dataset you choose.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('hello').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+});
+
+document.querySelectorAll('.lvl').forEach(l => {
+  l.addEventListener('click', () => activateLevel(l.dataset.lvl));
+});
+function activateLevel(id){
+  const total = document.querySelectorAll('.lvl').length;
+  document.querySelectorAll('.lvl').forEach(l => l.classList.toggle('active', l.dataset.lvl === id));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
+  document.getElementById('xpFill').style.width = (id / total * 100) + '%';
+  document.getElementById('xpCount').textContent = 'LVL ' + id + ' / ' + total;
+}
+
+/* ---------- shared real dataset (verified from the instructor's actual pivot output) ---------- */
+const yearData = [
+  ['2017','$4,065,680','$10,289,670'],
+  ['2018','$7,747,551','$17,028,380'],
+  ['2019','$7,417,353','$15,705,990'],
+  ['2020','$9,909,624','$22,405,052'],
+  ['2021','$12,986,202','$29,747,226']
+];
+const yearTotal = ['$42,126,410','$95,176,318'];
+
+const countryData = [
+  ['Australia', 25427586],
+  ['Canada', 8014536],
+  ['France', 9847213],
+  ['Germany', 9982203],
+  ['United Kingdom', 11090006],
+  ['United States', 30814774]
+];
+
+const ageData = [
+  ['Adults (35-64)', '$47,323,876', '49.7%'],
+  ['Seniors (64+)', '$339,700', '0.4%'],
+  ['Young Adults (25-34)', '$34,310,905', '36.1%'],
+  ['Youth (<25)', '$13,201,837', '13.9%']
+];
+
+const countryProfitData = [
+  ['Australia', 10901557],
+  ['Canada', 3796094],
+  ['France', 4294623],
+  ['Germany', 4363602],
+  ['United Kingdom', 4857663],
+  ['United States', 13912871]
+];
+
+/* ---------- LEVEL 1 — table + bar reveal ---------- */
+function renderCountryTable(){
+  const table = document.getElementById('countryTable');
+  let thead = '<thead><tr><th>Country</th><th>Sum of Revenue</th></tr></thead>';
+  let rows = countryData.map(([c,v]) => `<tr><td>${c}</td><td>$${v.toLocaleString()}</td></tr>`).join('');
+  let tfoot = `<tr class="total-row"><td>Grand Total</td><td>$95,176,318</td></tr>`;
+  table.innerHTML = thead + '<tbody>' + rows + tfoot + '</tbody>';
+}
+renderCountryTable();
+
+function renderBarchart(){
+  const box = document.getElementById('barchartBox');
+  const sorted = [...countryData].sort((a,b) => b[1]-a[1]);
+  const max = sorted[0][1];
+  const colors = ['#2f7dff','#ff3d94','#a4d925','#ffc328','#5c7a17','#e0405a'];
+  box.innerHTML = sorted.map(([c,v],i) => `
+    <div class="bar-row">
+      <span class="bar-label">${c}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${(v/max*100).toFixed(1)}%;background:${colors[i % colors.length]};"></div></div>
+      <span class="bar-val">$${(v/1000000).toFixed(1)}M</span>
+    </div>
+  `).join('');
+}
+renderBarchart();
+
+document.getElementById('revealBarBtn').addEventListener('click', () => {
+  const wrap = document.getElementById('barReveal');
+  const btn = document.getElementById('revealBarBtn');
+  const isOpen = wrap.style.display === 'block';
+  wrap.style.display = isOpen ? 'none' : 'block';
+  btn.textContent = isOpen ? '👀 Show me as a chart' : '🙈 Hide the chart';
+});
+
+/* ---------- LEVEL 2 — four chart types ---------- */
+const chartTypes = [
+  {q:'📊 Bar / Column chart', a:'<b>Reach for this when:</b> comparing one number across separate categories — countries, product lines, people.<br><br><b>Classic example:</b> how many units each of six sales reps sold last quarter — six bars, tallest rep wins, no mental math needed to rank them.<br><br>Vertical bars are usually called a <i>column</i> chart; sideways bars are a <i>bar</i> chart — same idea, just rotated. Use bar when category names are long, column when they\'re short.'},
+  {q:'📈 Line chart', a:'<b>Reach for this when:</b> tracking one number over time and you care about direction — up, down, or flat.<br><br><b>Classic example:</b> a stock\'s price over the course of a trading day, or a year — every dip and rally shows up as a bend in the line. A single "it went up" headline would hide a dip in the middle completely.<br><br>Needs a real time axis. If there\'s no time dimension, a line chart is the wrong tool even if the dots "could" connect.'},
+  {q:'🥧 Pie chart', a:'<b>Reach for this when:</b> showing how one total splits into a few shares — and "a few" means 5–6 slices, max.<br><br><b>Classic example:</b> a company\'s annual budget split across expense categories — rent, salaries, utilities, marketing. One slice (usually salaries) dominates; the smallest ones barely show.<br><br>More slices than that, and it stops working — see the next level.'},
+  {q:'🔬 Scatter chart', a:'<b>Reach for this when:</b> checking whether two numbers move together — does one go up when the other goes up?<br><br><b>The catch:</b> this is the one chart a pivot table can\'t feed. Bar, line, and pie all work from totals — one row per category. A scatter needs one row per <i>sale</i>, e.g. "does a lower Unit Price sell a higher Order Quantity?" That needs the raw order rows, not a summary — so you won\'t build one from a pivot table today.'}
+];
+function renderChartTypeGrid(){
+  const grid = document.getElementById('chartTypeGrid');
+  grid.innerHTML = '';
+  chartTypes.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'qq-card';
+    card.innerHTML = `<div class="qq-q">${item.q}</div><div class="qq-hint">tap to reveal →</div><div class="qq-a">${item.a}</div>`;
+    card.addEventListener('click', () => card.classList.toggle('revealed'));
+    grid.appendChild(card);
+  });
+}
+renderChartTypeGrid();
+
+/* ---------- LEVEL 3 — pie mockups (CSS conic-gradient, illustrative) ---------- */
+function renderPies(){
+  // good: 4 real slices from Age Group data
+  const goodColors = ['#2f7dff','#e0405a','#a4d925','#ffc328'];
+  const goodPct = [49.7, 0.4, 36.1, 13.9];
+  let acc = 0;
+  let goodStops = goodPct.map((p,i) => {
+    const start = acc; acc += p;
+    return `${goodColors[i]} ${start}% ${acc}%`;
+  }).join(', ');
+  document.getElementById('pieGood').style.background = `conic-gradient(${goodStops})`;
+  document.getElementById('pieGood').style.border = '2px solid var(--line)';
+
+  // bad: 18 arbitrary thin slices to show visual clutter (illustrative only, not real proportions)
+  const badColors = ['#2f7dff','#ff3d94','#a4d925','#ffc328','#5c7a17','#e0405a','#8a6a00','#93a3a6','#1c1c22','#7fa9d9','#dda658','#e2828c','#7fc09e','#bcd4ef','#2f9e6f','#9c3a44','#1f3a5f','#a86a1a'];
+  const n = badColors.length;
+  let acc2 = 0;
+  const badStops = badColors.map((c) => {
+    const start = acc2; acc2 += 100/n;
+    return `${c} ${start}% ${acc2}%`;
+  }).join(', ');
+  document.getElementById('pieBad').style.background = `conic-gradient(${badStops})`;
+  document.getElementById('pieBad').style.border = '2px solid var(--line)';
+}
+renderPies();
+
+/* ---------- LEVEL 4 — pivot table build tasks ---------- */
+function ageTableHtml(){
+  let thead = '<thead><tr><th>Age_Group</th><th>Sum of Revenue</th><th>% of total</th></tr></thead>';
+  let rows = ageData.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+  let tfoot = `<tr class="total-row"><td>Grand Total</td><td>$95,176,318</td><td>100%</td></tr>`;
+  return `<div class="verified-tag">✓ verified — matches the instructor's actual pivot output</div><div class="data-table-wrap"><table class="data-table">${thead}<tbody>${rows}${tfoot}</tbody></table></div>`;
+}
+function yearTableHtml(){
+  let thead = '<thead><tr><th>Year</th><th>Sum of Profit</th><th>Sum of Revenue</th></tr></thead>';
+  let rows = yearData.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+  let tfoot = `<tr class="total-row"><td>Grand Total</td><td>${yearTotal[0]}</td><td>${yearTotal[1]}</td></tr>`;
+  return `<div class="verified-tag">✓ verified — matches the instructor's actual pivot output</div><div class="data-table-wrap"><table class="data-table">${thead}<tbody>${rows}${tfoot}</tbody></table></div>`;
+}
+function countryTableHtml(){
+  let thead = '<thead><tr><th>Country</th><th>Accessories</th><th>Grand Total</th></tr></thead>';
+  const acc = {'Australia':'$3,284,787','Canada':'$2,305,298','France':'$1,627,689','Germany':'$1,724,549','United Kingdom':'$1,951,000','United States':'$5,819,323'};
+  let rows = countryData.map(([c,v]) => `<tr><td>${c}</td><td>${acc[c]}</td><td>$${v.toLocaleString()}</td></tr>`).join('');
+  let tfoot = `<tr class="total-row"><td>Grand Total</td><td>$16,712,646</td><td>$95,176,318</td></tr>`;
+  return `<div class="verified-tag">✓ verified — Accessories and Grand Total columns shown; Bikes and Clothing also appear in your own pivot, check those against your sheet</div><div class="data-table-wrap"><table class="data-table">${thead}<tbody>${rows}${tfoot}</tbody></table></div>`;
+}
+function countryProfitTableHtml(){
+  let thead = '<thead><tr><th>Country</th><th>Sum of Profit (2017–2021)</th></tr></thead>';
+  let rows = countryProfitData.map(([c,v]) => `<tr><td>${c}</td><td>$${v.toLocaleString()}</td></tr>`).join('');
+  let tfoot = `<tr class="total-row"><td>Grand Total</td><td>$42,126,410</td></tr>`;
+  return `<div class="verified-tag">✓ verified — Grand Total matches the instructor's actual pivot output; the Year-by-Year columns are what you'll build yourself, check them against this total once you're done</div><div class="data-table-wrap"><table class="data-table">${thead}<tbody>${rows}${tfoot}</tbody></table></div>`;
+}
+
+const bossQuestions = [
+  {no:'1', title:'"Has revenue actually grown every year, or are we telling ourselves a nice story?"', sub:'— your CFO',
+   reveal:`
+     <div class="task-note"><b>Right pivot:</b> Rows: Year · Values: Sum of Profit, Sum of Revenue</div>
+     <div class="task-note"><b>Right chart:</b> Line chart — you're tracking direction over a real time axis, not comparing separate categories.</div>
+     <div class="task-note"><b>What you'd tell the CFO:</b> revenue climbed from $10.3M in 2017 to $29.7M in 2021, but 2019 actually dipped in both revenue <i>and</i> profit before rebounding — so "we grew every year" isn't quite true.</div>
+     ${yearTableHtml()}`},
+  {no:'2', title:'"Which countries and product lines should get more budget next year?"', sub:'— Sales',
+   reveal:`
+     <div class="task-note"><b>Right pivot:</b> Rows: Country · Columns: Product_Category · Values: Sum of Revenue</div>
+     <div class="task-note"><b>Right chart:</b> Stacked column chart — comparing categories, and showing what each country's revenue is made of at the same time.</div>
+     <div class="task-note"><b>What you'd tell Sales:</b> the United States and Australia alone are almost 60% of all revenue — everything else is a rounding error by comparison.</div>
+     ${countryTableHtml()}`},
+  {no:'3', title:'"Which customer age group should our next campaign target?"', sub:'— Marketing',
+   reveal:`
+     <div class="task-note"><b>Right pivot:</b> Rows: Age_Group · Values: Sum of Revenue</div>
+     <div class="task-note"><b>Right chart:</b> Pie chart — only 4 categories, well under the 5–6 slice limit from Level 3, so it's actually safe here.</div>
+     <div class="task-note"><b>What you'd tell Marketing:</b> Adults (35–64) alone are about half of all revenue — Seniors (64+) are barely 0.4%.</div>
+     ${ageTableHtml()}`},
+  {no:'4', title:'"Is our growth coming from every market, or mostly from one or two?"', sub:'— your COO',
+   reveal:`
+     <div class="task-note"><b>Right pivot:</b> Rows: Country · Columns: Year · Values: Sum of Profit</div>
+     <div class="task-note"><b>Right chart:</b> Line chart — but check "Switch rows/columns" in the chart editor first. Built straight from this pivot, Sheets defaults to one line per year with Country on the X-axis, backwards from what you want. Switching it puts Year on the X-axis and gives you one line per country.</div>
+     <div class="task-note"><b>Watch the field:</b> this pivot is Sum of Profit, not Sum of Revenue. Same shape of question Sales already asked, different number — check which field you actually pivoted before you chart it. Mixing the two up here is an easy, common mistake.</div>
+     <div class="task-note"><b>What you'd tell the COO:</b> the United States and Australia together account for almost 59% of six years of profit ($24.8M of $42.1M) — the same concentration Sales already found in revenue. Every market grew from 2017 to 2018 — the U.S. alone by about 84% in that one year — but the six lines won't move in lockstep after that, which is exactly what a single combined total hides and a line chart per country reveals.</div>
+     ${countryProfitTableHtml()}`}
+];
+
+function renderBossTaskGrid(){
+  const grid = document.getElementById('bossTaskGrid');
+  grid.innerHTML = '';
+  bossQuestions.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'task-card';
+    card.dataset.t = item.no;
+    card.innerHTML = `
+      <div class="task-head">
+        <span class="task-no">${item.no}</span>
+        <div class="task-title-block">
+          <span class="task-title">${item.title}</span>
+          <span class="task-sub">${item.sub}</span>
+        </div>
+        <span class="task-hint">tap to open →</span>
+      </div>
+      <div class="task-detail">
+        <div class="stuck-toggle" data-target="stuck-boss-${item.no}">🔒 Tried it yourself? Check the answer key →</div>
+        <div class="stuck-reveal" id="stuck-boss-${item.no}">${item.reveal}</div>
+      </div>
+    `;
+    card.addEventListener('click', (e) => {
+      if(e.target.classList.contains('stuck-toggle')) return;
+      card.classList.toggle('expanded');
+    });
+    grid.appendChild(card);
+  });
+  document.querySelectorAll('.stuck-toggle').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const target = document.getElementById(btn.dataset.target);
+      target.classList.toggle('open');
+      btn.textContent = target.classList.contains('open') ? '🔓 Hide the answer key' : '🔒 Tried it yourself? Check the answer key →';
+    });
+  });
+}
+renderBossTaskGrid();
+
+/* ---------- LEVEL 5 — recap reveal ---------- */
+document.getElementById('revealSuccessBtn').addEventListener('click', () => {
+  const grid = document.getElementById('successGrid');
+  const btn = document.getElementById('revealSuccessBtn');
+  const isOpen = grid.style.display === 'grid';
+  if(isOpen){
+    grid.style.display = 'none';
+    btn.textContent = '🔑 What carries into next session';
+  } else {
+    grid.style.display = 'grid';
+    btn.textContent = '🔑 Got it ✓';
+  }
+});
+</script>
+
+</body>
+</html>
