@@ -57,6 +57,7 @@
   .session-card[data-session="s3"]{--sc:var(--lime);}
   .session-card[data-session="s4"]{--sc:var(--yellow);}
   .session-card[data-session="s5"]{--sc:var(--blue);}
+  .session-card[data-session="s6"]{--sc:var(--pink);}
   .sc-badge{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
   .sc-badge b{color:var(--ink);}
   .session-card h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;margin:0 0 10px;line-height:1.25;}
@@ -141,6 +142,12 @@
         <p class="sc-desc">A five-year sales file, real pivot tables, and boss-style questions where you pick the pivot, the chart, and the story yourself.</p>
       </div>
 
+      <div class="session-card" data-session="s6" data-open="s6" tabindex="0" role="button">
+        <div class="sc-badge">Session 06 · <b>5 levels</b></div>
+        <h2>Listen First, Then Debate</h2>
+        <p class="sc-desc">Practice the Echo Rule, repeating what the other person said before you answer, then put it to work in a debate on whether free will is real.</p>
+      </div>
+
     </div>
   </div>
 
@@ -169,7 +176,7 @@
     </div>
   </div>
 
-  <div class="site-footer">5 sessions live here — more will be added to this page as the course continues.</div>
+  <div class="site-footer">6 sessions live here — more will be added to this page as the course continues.</div>
 </div>
 
 <div id="viewer">
@@ -186,7 +193,8 @@ const SESSION_FILES = {
   s2: 'slides/session-02-vocabulary.html',
   s3: 'slides/session-03-formula-detective.html',
   s4: 'slides/session-04-data-visualization.html',
-  s5: 'slides/session-05-data-visualization-intro.html'
+  s5: 'slides/session-05-data-visualization-intro.html',
+  s6: 'slides/session-06-debate-free-will.html'
 };
 
 const SESSION_META = {
@@ -194,7 +202,8 @@ const SESSION_META = {
   s2: 'Session 02 — Can We Trust This Dataset?',
   s3: 'Session 03 — Formula Detective',
   s4: 'Session 04 — Seeing the Data',
-  s5: 'Session 05 — Numbers Into Pictures'
+  s5: 'Session 05 — Numbers Into Pictures',
+  s6: 'Session 06 — Listen First, Then Debate'
 };
 
 const landing = document.getElementById('landing');

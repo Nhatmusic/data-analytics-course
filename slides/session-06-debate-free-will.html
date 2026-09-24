@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 06 | Listen First, Then Debate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* palette: bg #fafaf6 · panel #ffffff · ink #14141a · lime #a4d925 · pink #ff3d94 · blue #2f7dff · yellow #ffc328
+     type: Space Grotesk (display) · Inter (body) · JetBrains Mono (HUD / labels)
+     same field-notebook system as Sessions 01, 02 and 05 */
+  :root{
+    --bg:#fafaf6; --panel:#ffffff; --panel2:#f2f2ea; --line:#1c1c22; --ink:#14141a; --muted:#6c6c76;
+    --lime:#a4d925; --pink:#ff3d94; --blue:#2f7dff; --yellow:#ffc328; --lime-deep:#5c7a17; --red:#e0405a; --green:#2f9e6f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+  #hello{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;padding:24px;}
+  #hello .badge{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:6px 14px;border-radius:20px;}
+  #hello h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(32px,7vw,60px);margin:0;line-height:1.12;}
+  #hello h1 span{color:var(--pink);}
+  #hello p.sub{font-size:16px;color:var(--muted);max-width:52ch;margin:0;}
+  .start-btn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--ink);background:var(--lime);border:2px solid var(--ink);padding:16px 36px;border-radius:40px;cursor:pointer;box-shadow:0 6px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;}
+  .start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink);}
+  .start-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+  .start-btn.small{font-size:15px;padding:12px 24px;box-shadow:0 5px 0 var(--ink);}
+
+  #app{display:none;max-width:1060px;margin:0 auto;padding:28px 22px 70px;}
+  .hud-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .hud-top .tag{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .xp-bar{flex:1;height:8px;background:var(--panel2);border-radius:6px;margin:0 16px;overflow:hidden;}
+  .xp-fill{height:100%;width:20%;background:linear-gradient(90deg,var(--blue),var(--lime));transition:width .3s ease;}
+  .xp-count{font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap;}
+
+  .levels{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;}
+  .lvl{flex:1;min-width:120px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12.5px;text-align:center;padding:11px 6px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;transition:transform .12s ease, color .12s ease;}
+  .lvl small{display:block;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:10px;letter-spacing:.08em;margin-bottom:3px;opacity:.8;}
+  .lvl:hover{transform:translateY(-2px);}
+  .lvl.active{color:var(--ink);}
+  .lvl[data-lvl="1"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="2"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="3"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl[data-lvl="4"].active{background:var(--yellow);border-color:var(--yellow);}
+  .lvl[data-lvl="5"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+
+  .stage{background:var(--panel);border:2px solid var(--line);border-radius:20px;padding:30px 26px 34px;}
+  .page{display:none;}
+  .page.active{display:block;animation:pop .22s ease;}
+  @keyframes pop{from{opacity:0;transform:scale(.98);}to{opacity:1;transform:scale(1);}}
+  .page h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(22px,4vw,32px);margin:0 0 8px;}
+  .page .lede{font-size:15.5px;color:var(--muted);max-width:66ch;margin:0 0 20px;}
+  .section-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;}
+
+  .box{margin-top:18px;border-radius:14px;padding:15px 18px;border:1px solid var(--line);}
+  .box .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+  .box p{margin:0;font-size:14.5px;font-weight:500;line-height:1.55;}
+  .box.goal{background:rgba(255,195,40,0.18);border-color:var(--yellow);margin-top:0;margin-bottom:16px;}
+  .box.goal .dl{color:#8a6a00;} .box.goal p{font-weight:600;}
+  .box.hook{background:rgba(47,125,255,0.08);border-color:var(--blue);} .box.hook .dl{color:var(--blue);}
+  .box.discuss{background:rgba(164,217,37,0.14);border-color:var(--lime);} .box.discuss .dl{color:var(--lime-deep);}
+  .box.rule{background:rgba(255,61,148,0.07);border-color:var(--pink);} .box.rule .dl{color:var(--pink);}
+  .box.big p{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(17px,2.8vw,22px);line-height:1.4;}
+
+  /* goal cards */
+  .goal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:6px 0 4px;}
+  .goal-card{border:2px solid var(--line);border-radius:16px;padding:18px 18px 16px;background:var(--panel);}
+  .goal-card .g-ico{font-size:30px;display:block;margin-bottom:6px;}
+  .goal-card .g-no{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;}
+  .goal-card .g-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(18px,2.6vw,22px);display:block;margin:2px 0 6px;}
+  .goal-card .g-desc{font-size:13.5px;line-height:1.55;}
+  .goal-card:nth-child(1){border-top:8px solid var(--blue);}
+  .goal-card:nth-child(2){border-top:8px solid var(--pink);}
+  .goal-card:nth-child(3){border-top:8px solid var(--lime);}
+
+  /* board prompt */
+  .board{background:var(--ink);color:#e8f7d0;border-radius:16px;padding:22px 24px;font-family:'JetBrains Mono',monospace;font-size:clamp(14px,2.2vw,18px);line-height:1.65;border:2px solid var(--line);}
+  .board .b-tag{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--lime);margin-bottom:8px;}
+  .board em{color:var(--yellow);font-style:normal;font-weight:700;}
+
+  /* step strip (mini flow) */
+  .mini-flow{display:flex;align-items:stretch;flex-wrap:wrap;margin:12px 0 18px;}
+  .mf-step{flex:1;min-width:150px;background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center;}
+  .mf-step .mf-no{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--muted);display:block;}
+  .mf-step .mf-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;display:block;}
+  .mf-step .mf-sub{font-size:12px;color:var(--muted);display:block;margin-top:3px;}
+  .mf-step.hot{background:rgba(164,217,37,0.2);border-color:var(--lime-deep);}
+  .mf-arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px;padding:0 4px;flex:0 0 auto;}
+  @media (max-width:640px){ .mini-flow{flex-direction:column;} .mf-arrow{transform:rotate(90deg);padding:2px 0;} }
+
+  /* click cards */
+  .qq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;}
+  .qq-card{border:2px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;transition:background .12s ease;}
+  .qq-card .qq-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;margin-bottom:4px;}
+  .qq-card .qq-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+  .qq-card .qq-a{display:none;font-size:13.5px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);line-height:1.6;}
+  .qq-card.revealed{background:var(--panel2);border-color:var(--lime);}
+  .qq-card.revealed .qq-a{display:block;}
+  .qq-card.revealed .qq-hint{display:none;}
+  .qq-card.evA.revealed{border-color:var(--pink);} .qq-card.evB.revealed{border-color:var(--blue);}
+
+  /* roles / drill */
+  .role-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:8px 0;}
+  .role{border:2px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--panel2);}
+  .role .r-head{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+  .role .r-time{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--ink);color:#fff;border-radius:8px;padding:2px 8px;}
+  .role p{margin:0;font-size:13.5px;line-height:1.55;}
+  .echo-line{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;background:rgba(255,195,40,0.22);border:1px solid var(--yellow);border-radius:10px;padding:10px 14px;margin-top:10px;}
+
+  /* debate schedule */
+  .sched{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+  .s-row{display:grid;grid-template-columns:64px 1fr;gap:12px;border:2px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;background:var(--panel);}
+  .s-time{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;padding:12px;display:flex;align-items:center;justify-content:center;}
+  .s-time small{font-weight:500;color:inherit;opacity:.75;font-size:10.5px;}
+  .s-body{padding:12px 14px 12px 0;}
+  .s-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;display:block;}
+  .s-sub{font-size:12.5px;color:var(--muted);display:block;margin-top:2px;}
+  .s-more{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:13.5px;line-height:1.6;}
+  .s-row.open .s-more{display:block;}
+  .s-row[data-k="prep"] .s-time{background:var(--panel2);}
+  .s-row[data-k="aff"] .s-time{background:var(--pink);color:#fff;}
+  .s-row[data-k="neg"] .s-time{background:var(--blue);color:#fff;}
+  .s-row[data-k="sum"] .s-time{background:var(--yellow);}
+  .s-row[data-k="reb"] .s-time{background:var(--ink);color:#fff;}
+  .s-row[data-k="clo"] .s-time{background:var(--lime);}
+  .s-row.hotrow{border-color:var(--lime-deep);box-shadow:0 0 0 3px rgba(164,217,37,0.5);}
+
+  /* sentence frames + worked example */
+  .frame{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:var(--ink);color:#e8f7d0;border-radius:10px;padding:10px 14px;margin:6px 0;line-height:1.6;}
+  .frame b{color:var(--yellow);}
+  .ex-wrap{border:2px solid var(--line);border-radius:14px;padding:6px 16px 14px;margin-top:10px;background:var(--panel2);}
+  .ex-line{margin:10px 0 0;font-size:14px;line-height:1.55;}
+  .ex-tag{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:8px;margin-right:6px;color:#fff;background:var(--ink);}
+  .ex-tag.a{background:var(--pink);} .ex-tag.b{background:var(--blue);} .ex-tag.e{background:var(--yellow);color:var(--ink);} .ex-tag.c{background:var(--lime-deep);}
+  .ex-hidden{display:none;}
+  .ex-hidden.open{display:block;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 6px;}
+  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:13.5px;font-weight:600;}
+
+  .recap-statement{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(19px,3.4vw,26px);line-height:1.35;margin:6px 0 22px;}
+  .hl-pink{color:var(--pink);} .hl-blue{color:var(--blue);} .hl-yellow{color:#8a6a00;}
+  .reveal-body{display:none;margin-top:16px;}
+  .reveal-body.open{display:block;}
+</style>
+</head>
+<body>
+
+<div id="hello">
+  <div class="badge">Session 06</div>
+  <h1>Listen first.<br>Then <span>argue</span> back.</h1>
+  <p class="sub">Today you debate a big question: is free will real? First you practice one skill that makes every debate better: repeating what the other person said before you answer.</p>
+  <button class="start-btn" id="startBtn">Let's go ▶</button>
+</div>
+
+<div id="app">
+
+  <div class="hud-top">
+    <span class="tag">Progress</span>
+    <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+    <span class="xp-count" id="xpCount">LVL 1 / 5</span>
+  </div>
+
+  <div class="levels">
+    <div class="lvl active" data-lvl="1"><small>L1</small>Class Map 🗺️</div>
+    <div class="lvl" data-lvl="2"><small>L2</small>Who Is You? 🧠</div>
+    <div class="lvl" data-lvl="3"><small>L3</small>Echo Rule 🔁</div>
+    <div class="lvl" data-lvl="4"><small>L4</small>The Debate ⚖️</div>
+    <div class="lvl" data-lvl="5"><small>L5</small>Reflect 🎉</div>
+  </div>
+
+  <div class="stage">
+
+    <!-- LEVEL 1: CLASS MAP -->
+    <div class="page active" id="page-1">
+      <h2>Today's 3 goals 🎯</h2>
+      <p class="lede">Three skills to practice today.</p>
+
+      <div class="goal-grid">
+        <div class="goal-card"><span class="g-ico">🎧</span><span class="g-no">Goal 1</span><span class="g-title">Deep listening</span><span class="g-desc">Listen to understand, not just to wait for your turn to talk.</span></div>
+        <div class="goal-card"><span class="g-ico">📝</span><span class="g-no">Goal 2</span><span class="g-title">Summarization</span><span class="g-desc">Say the other person's argument back in your own words, in about 30 seconds, until they say "yes, that's it."</span></div>
+        <div class="goal-card"><span class="g-ico">🧩</span><span class="g-no">Goal 3</span><span class="g-title">Critical thinking</span><span class="g-desc">Test an argument: check the evidence, the assumptions, and what the words really mean.</span></div>
+      </div>
+    </div>
+
+    <!-- LEVEL 2: WHO IS YOU -->
+    <div class="page" id="page-2">
+      <h2>Who is "you"? 🧠</h2>
+      <p class="lede">Before the debate, one question to warm up. Read it, think alone, then compare with a partner.</p>
+
+      <div class="board">
+        <span class="b-tag">On the board</span>
+        If your unconscious brain makes a decision 2 seconds before your conscious mind realizes it, did <em>YOU</em> make the decision, or did <em>YOUR BRAIN</em> make it for you?
+      </div>
+
+      <div class="section-tag">Think, Pair, Share</div>
+      <div class="mini-flow">
+        <div class="mf-step"><span class="mf-no">1 MIN</span><span class="mf-title">Think alone</span><span class="mf-sub">Write a 1-sentence definition of "Me"</span></div>
+        <div class="mf-arrow">➜</div>
+        <div class="mf-step"><span class="mf-no">3 MIN</span><span class="mf-title">Pair up</span><span class="mf-sub">Share your definitions</span></div>
+        <div class="mf-arrow">➜</div>
+        <div class="mf-step"><span class="mf-no">1 MIN</span><span class="mf-title">Today's goal</span><span class="mf-sub">Class discussion</span></div>
+      </div>
+
+      <div class="box hook">
+        <div class="dl">Help for your sentence</div>
+        <p>Is "Me" only the part of you that is <b>aware and thinking</b> right now? Or does "Me" also include all <b>90 billion neurons</b> working in the background?</p>
+      </div>
+
+      <div class="box discuss">
+        <div class="dl">Today's goal</div>
+        <p>Debate whether conscious free will is real, while practicing <b>deep listening</b>: listening to understand, not just waiting for your turn to talk.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 3: THE ECHO RULE -->
+    <div class="page" id="page-3">
+      <h2>The Echo Rule 🔁</h2>
+      <p class="lede">One rule for the whole debate. Everything else is up to you.</p>
+
+      <div class="box rule big" style="margin-top:0;">
+        <div class="dl">The rule</div>
+        <p>Before you answer anyone, say their argument back. They confirm you got it right. Only then do you respond.<br><span class="hl-pink">No echo, no rebuttal.</span></p>
+      </div>
+
+      <div class="echo-line">Say it like this: "What I heard you say is..."</div>
+
+      <div class="box hook">
+        <div class="dl">You decide</div>
+        <p>Which points to make, which evidence to use, and how to argue back.</p>
+      </div>
+
+      <div class="stuck-toggle" id="hintToggle" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--muted);border:1px dashed var(--line);border-radius:20px;padding:6px 12px;display:inline-block;cursor:pointer;margin-top:18px;">🆘 Stuck? Tap for a hint →</div>
+      <div class="ex-hidden" id="hintBody">
+        <div class="section-tag">One way to build a reply</div>
+        <div class="mini-flow">
+          <div class="mf-step hot"><span class="mf-no">1</span><span class="mf-title">Summarize</span><span class="mf-sub">Say their argument back</span></div>
+          <div class="mf-arrow">➜</div>
+          <div class="mf-step hot"><span class="mf-no">2</span><span class="mf-title">Confirm</span><span class="mf-sub">"Did I get that right?"</span></div>
+          <div class="mf-arrow">➜</div>
+          <div class="mf-step"><span class="mf-no">3</span><span class="mf-title">Oppose</span><span class="mf-sub">Your opposite opinion</span></div>
+          <div class="mf-arrow">➜</div>
+          <div class="mf-step"><span class="mf-no">4</span><span class="mf-title">Prove it</span><span class="mf-sub">Evidence from the video</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 4: THE DEBATE -->
+    <div class="page" id="page-4">
+      <h2>The debate ⚖️</h2>
+      <p class="lede">Six steps. Tap a row for details. Every opening gets echoed right away.</p>
+
+      <div class="box goal" style="margin-top:0;">
+        <div class="dl">The topic</div>
+        <p>"Resolved: Human free will is primarily an illusion created after our unconscious brain has already acted."</p>
+      </div>
+
+      <div class="sched" id="sched"></div>
+
+      <div class="box rule">
+        <div class="dl">In the rebuttal</div>
+        <p>Every reply starts with the echo: <b>summarize, confirm, then oppose with evidence.</b> If your opponent says your summary is off, fix it before you continue.</p>
+      </div>
+
+      <div class="section-tag">Attack the reasoning, not the person</div>
+      <div class="chip-row">
+        <div class="chip">🔗 Correlation vs. causation: did X cause Y, or did they just happen together?</div>
+        <div class="chip">🎯 Assumptions: what must be true for their argument to work?</div>
+        <div class="chip">📖 Definitions: what does "free" mean here?</div>
+      </div>
+      <div class="box hook">
+        <div class="dl">Example definition challenge</div>
+        <p>"Is an unconscious choice still 'free' if it comes from your own memories?"</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 5: REFLECT -->
+    <div class="page" id="page-5">
+      <h2>Reflect and wrap up 🎉</h2>
+      <p class="lede">10 minutes. Write first, then share. Tap a question after you have said your answer out loud.</p>
+
+      <div class="mini-flow">
+        <div class="mf-step"><span class="mf-no">3 MIN</span><span class="mf-title">Write</span><span class="mf-sub">2 or 3 sentences per question</span></div>
+        <div class="mf-arrow">➜</div>
+        <div class="mf-step"><span class="mf-no">5 MIN</span><span class="mf-title">Share</span><span class="mf-sub">Read your answers to each other</span></div>
+        <div class="mf-arrow">➜</div>
+        <div class="mf-step"><span class="mf-no">2 MIN</span><span class="mf-title">Takeaway</span><span class="mf-sub">Wrap up</span></div>
+      </div>
+      <div class="qq-grid" id="reflectGrid"></div>
+
+      <p class="recap-statement" style="margin-top:28px;"><span class="hl-pink">Summarize</span> first, <span class="hl-blue">oppose</span> second, and always bring <span class="hl-yellow">evidence</span>.</p>
+
+      <div class="chip-row">
+        <div class="chip">🗺️ Warm-up → Debate → Reflect</div>
+        <div class="chip">🔁 Summarize → Confirm → Oppose → Prove it</div>
+      </div>
+
+      <div style="margin-top:18px;">
+        <button class="start-btn small" id="takeBtn">🔑 Today's takeaway</button>
+      </div>
+      <div class="reveal-body" id="takeBody">
+        <div class="box big discuss"><div class="dl">Takeaway</div><p>Consciousness might not be the only "driver" of the brain. But conscious reflection lets you set long-term goals and shape your future unconscious habits.</p></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('hello').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+});
+
+document.querySelectorAll('.lvl').forEach(l => l.addEventListener('click', () => activateLevel(l.dataset.lvl)));
+function activateLevel(id){
+  const total = document.querySelectorAll('.lvl').length;
+  document.querySelectorAll('.lvl').forEach(l => l.classList.toggle('active', l.dataset.lvl === id));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
+  document.getElementById('xpFill').style.width = (id / total * 100) + '%';
+  document.getElementById('xpCount').textContent = 'LVL ' + id + ' / ' + total;
+}
+
+/* ---------- shared: click cards ---------- */
+function makeCards(list, gridId){
+  const grid = document.getElementById(gridId);
+  list.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'qq-card ' + (item.cls || '');
+    card.innerHTML = `<div class="qq-q">${item.q}</div><div class="qq-hint">tap to reveal →</div><div class="qq-a">${item.a}</div>`;
+    card.addEventListener('click', () => card.classList.toggle('revealed'));
+    grid.appendChild(card);
+  });
+}
+
+/* ---------- LEVEL 4: debate schedule ---------- */
+const sched = [
+  {k:'aff', t:'1', n:'Affirmative Opening (Student A)', s:'Free will is an illusion',
+   m:'Use unconscious processing, TMS manipulation, and sleepwalking.'},
+  {k:'sum', t:'2', n:'Echo: Student B summarizes A', s:'"What I heard you say is..." No rebuttal yet.', hot:true,
+   m:'Student B says A\'s core argument back. Student A confirms or corrects it once. B may not argue back yet.'},
+  {k:'neg', t:'3', n:'Negative Opening (Student B)', s:'Conscious agency is real',
+   m:'Use prefrontal control, the sense of agency, and moral ownership.'},
+  {k:'sum', t:'4', n:'Echo: Student A summarizes B', s:'"What I heard you say is..." No rebuttal yet.', hot:true,
+   m:'Student A says B\'s core argument back. Student B confirms or corrects it once. A may not argue back yet.'},
+  {k:'reb', t:'5', n:'Rebuttal and Cross-Examination', s:'Echo first, then challenge', hot:true,
+   m:'Every reply starts with the echo. Then challenge: attack assumptions, check correlation vs. causation, and challenge definitions. Example: "Is an unconscious choice still free if it originates from your own memories?"'},
+  {k:'clo', t:'6', n:'Closing Statements', s:'Pull your argument together and give credit',
+   m:'Sum up your main argument. Say out loud where your opponent made a valid point.'}
+];
+(function(){
+  const box = document.getElementById('sched');
+  sched.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 's-row' + (r.hot ? ' hotrow' : '');
+    row.dataset.k = r.k;
+    row.innerHTML = `<div class="s-time">${r.t}</div>
+      <div class="s-body"><span class="s-name">${r.n}</span><span class="s-sub">${r.s}</span><div class="s-more">${r.m}</div></div>`;
+    row.addEventListener('click', () => row.classList.toggle('open'));
+    box.appendChild(row);
+  });
+})();
+document.getElementById('hintToggle').addEventListener('click', () => {
+  const h = document.getElementById('hintBody');
+  h.classList.toggle('open');
+  document.getElementById('hintToggle').textContent = h.classList.contains('open') ? '🙈 Hide the hint' : '🆘 Stuck? Tap for a hint →';
+});
+
+/* ---------- LEVEL 5: reflection ---------- */
+const reflect = [
+  {q:'👂 Listening', a:'Did summarizing your opponent\'s position change how you built your rebuttal? What did you do differently?'},
+  {q:'💡 Your moves', a:'What moves did you invent while arguing? Which ones worked, and which would you keep?'},
+  {q:'🔬 Science and life', a:'The brain builds a "retrospective narrative", a story told after the fact. How does that change how we judge human responsibility?'}
+];
+makeCards(reflect, 'reflectGrid');
+document.getElementById('takeBtn').addEventListener('click', () => {
+  document.getElementById('takeBody').classList.toggle('open');
+});
+</script>
+
+</body>
+</html>
