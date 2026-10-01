@@ -78,6 +78,17 @@
   }
   .hw-link:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink);}
   .hw-link.disabled{background:var(--panel2);color:var(--muted);pointer-events:none;box-shadow:none;border-color:#ccc;}
+  .hw-row-detail{align-items:stretch;flex-direction:column;}
+  .hw-row-top{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .hw-toggle{display:inline-flex;align-items:center;gap:6px;}
+  .hw-toggle-arrow{display:inline-block;transition:transform .15s ease;}
+  .hw-toggle[aria-expanded="true"] .hw-toggle-arrow{transform:rotate(180deg);}
+  .hw-detail-list{list-style:none;margin:0;padding:0;font-size:13.5px;color:var(--muted);line-height:1.6;
+    max-height:0;overflow:hidden;opacity:0;transition:max-height .2s ease, opacity .2s ease, margin-top .2s ease;}
+  .hw-detail-list.open{margin-top:14px;padding-top:14px;border-top:1px solid var(--panel2);max-height:400px;opacity:1;}
+  .hw-detail-list li{margin-bottom:4px;}
+  .hw-detail-list li.hw-sub{padding-left:14px;color:var(--ink);}
+  .hw-detail-list a{color:var(--blue);font-weight:600;text-decoration:underline;}
 
   .site-footer{margin-top:40px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
 
@@ -176,6 +187,20 @@
       <div class="hw-row">
         <div class="hw-name"><small>Session 06</small>Use charts to answer questions</div>
       </div>
+      <div class="hw-row hw-row-detail">
+        <div class="hw-row-top">
+          <div class="hw-name"><small>Session 07</small>Statistics for Data Analytics</div>
+          <button class="hw-link hw-toggle" type="button" aria-expanded="false" data-toggle="hw7">Show details <span class="hw-toggle-arrow">&#9662;</span></button>
+        </div>
+        <ul class="hw-detail-list" id="hw7">
+          <li>Read: <a href="https://www.wgu.edu/blog/how-field-statistics-used-data-analytics2309.html" target="_blank" rel="noopener">How the Field of Statistics Is Used in Data Analytics</a></li>
+          <li>Read: <a href="https://www.geeksforgeeks.org/data-science/statistics-for-data-science/" target="_blank" rel="noopener">Statistics for Data Science</a></li>
+          <li>Record a short video talking through your answers, and write the same answers in a Google Doc. Cover:</li>
+          <li class="hw-sub">1. How is statistics used in data analytics?</li>
+          <li class="hw-sub">2. What are the common types of statistical methods used in data analytics?</li>
+          <li class="hw-sub">3. What do basic statistics formulas actually do? (e.g. mean, average, standard deviation)</li>
+        </ul>
+      </div>
     </div>
   </div>
 
@@ -253,6 +278,17 @@ window.addEventListener('hashchange', () => {
   const id = location.hash.replace('#','');
   if(SESSION_FILES[id]) openSession(id, false);
 })();
+
+/* ---------- HOMEWORK DETAIL TOGGLES ---------- */
+document.querySelectorAll('.hw-toggle').forEach(btn => {
+  const target = document.getElementById(btn.dataset.toggle);
+  if(!target) return;
+  btn.addEventListener('click', () => {
+    const open = target.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open);
+    btn.childNodes[0].nodeValue = open ? 'Hide details ' : 'Show details ';
+  });
+});
 
 /* ---------- TABS ---------- */
 document.querySelectorAll('.tab-btn').forEach(btn => {
