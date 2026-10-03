@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 07 | Two Kinds of Statistics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* palette: bg #fafaf6 · panel #ffffff · ink #14141a · lime #a4d925 · pink #ff3d94 · blue #2f7dff · yellow #ffc328
+     type: Space Grotesk (display) · Inter (body) · JetBrains Mono (HUD / labels / data)
+     same field-notebook system as Sessions 01, 02, 05 and 06. No single anchor dataset this session on purpose —
+     each measure gets its own small, easy example instead. */
+  :root{
+    --bg:#fafaf6; --panel:#ffffff; --panel2:#f2f2ea; --line:#1c1c22; --ink:#14141a; --muted:#6c6c76;
+    --lime:#a4d925; --pink:#ff3d94; --blue:#2f7dff; --yellow:#ffc328; --lime-deep:#5c7a17; --red:#e0405a; --green:#2f9e6f;
+    --lab:120px; --val:90px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+  #hello{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;padding:24px;}
+  #hello .badge{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:6px 14px;border-radius:20px;}
+  #hello h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(32px,7vw,58px);margin:0;line-height:1.14;}
+  #hello h1 span{color:var(--pink);}
+  #hello p.sub{font-size:16px;color:var(--muted);max-width:54ch;margin:0;}
+  .start-btn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--ink);background:var(--lime);border:2px solid var(--ink);padding:16px 36px;border-radius:40px;cursor:pointer;box-shadow:0 6px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;}
+  .start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink);}
+  .start-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+  .start-btn.small{font-size:15px;padding:12px 24px;box-shadow:0 5px 0 var(--ink);}
+  .start-btn.small:active{box-shadow:0 1px 0 var(--ink);}
+  .start-btn.alt{background:var(--yellow);}
+
+  #app{display:none;max-width:1040px;margin:0 auto;padding:28px 22px 70px;}
+  .hud-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .hud-top .tag{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .xp-bar{flex:1;height:8px;background:var(--panel2);border-radius:6px;margin:0 16px;overflow:hidden;}
+  .xp-fill{height:100%;width:12.5%;background:linear-gradient(90deg,var(--blue),var(--lime));transition:width .3s ease;}
+  .xp-count{font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap;}
+
+  .levels{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;}
+  .lvl{flex:1;min-width:104px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12.5px;text-align:center;padding:11px 6px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;transition:transform .12s ease, color .12s ease;}
+  .lvl small{display:block;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:10px;letter-spacing:.08em;margin-bottom:3px;opacity:.8;}
+  .lvl:hover{transform:translateY(-2px);}
+  .lvl.active{color:var(--ink);}
+  .lvl[data-lvl="1"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="2"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="3"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl[data-lvl="4"].active{background:var(--yellow);border-color:var(--yellow);}
+  .lvl[data-lvl="5"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="6"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl[data-lvl="7"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="8"].active{background:var(--yellow);border-color:var(--yellow);}
+  .lvl:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+
+  .stage{background:var(--panel);border:2px solid var(--line);border-radius:20px;padding:30px 26px 34px;}
+  .page{display:none;}
+  .page.active{display:block;animation:pop .22s ease;}
+  @keyframes pop{from{opacity:0;transform:scale(.98);}to{opacity:1;transform:scale(1);}}
+  .page h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(22px,4vw,32px);margin:0 0 8px;}
+  .page .lede{font-size:15.5px;color:var(--muted);max-width:66ch;margin:0 0 18px;}
+  .time-tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;background:var(--ink);color:#fff;border-radius:8px;padding:2px 8px;margin-left:8px;vertical-align:middle;letter-spacing:.04em;}
+  .section-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;}
+
+  .box{margin-top:18px;border-radius:14px;padding:15px 18px;border:1px solid var(--line);}
+  .box .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+  .box p{margin:0;font-size:14.5px;font-weight:500;line-height:1.55;}
+  .box.hook{background:rgba(47,125,255,0.08);border-color:var(--blue);} .box.hook .dl{color:var(--blue);}
+  .box.discuss{background:rgba(164,217,37,0.14);border-color:var(--lime);} .box.discuss .dl{color:var(--lime-deep);}
+  .box.gotcha{background:rgba(224,64,90,0.08);border-color:var(--red);} .box.gotcha .dl{color:var(--red);}
+  .box.sheets{background:rgba(47,158,111,0.10);border-color:var(--green);} .box.sheets .dl{color:var(--green);}
+  .box.rule{background:rgba(255,61,148,0.07);border-color:var(--pink);} .box.rule .dl{color:var(--pink);}
+  .box.big p{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(17px,2.8vw,22px);line-height:1.4;}
+  code.f{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:var(--ink);color:#e8f7d0;border-radius:6px;padding:2px 7px;}
+
+  /* why / what / how cards */
+  .wwh{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:6px 0 4px;}
+  .wwh-card{border:2px solid var(--line);border-radius:16px;padding:16px 18px 16px;background:var(--panel);}
+  .wwh-card .w-ico{font-size:26px;display:block;margin-bottom:4px;}
+  .wwh-card .w-tag{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;}
+  .wwh-card .w-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;display:block;margin:2px 0 6px;}
+  .wwh-card .w-desc{font-size:13.5px;line-height:1.55;}
+  .wwh-card .w-ex{font-family:'JetBrains Mono',monospace;font-size:11.5px;background:var(--panel2);border-radius:8px;padding:6px 9px;margin-top:8px;display:block;line-height:1.5;}
+  .wwh-card:nth-child(1){border-top:8px solid var(--pink);}
+  .wwh-card:nth-child(2){border-top:8px solid var(--blue);}
+  .wwh-card:nth-child(3){border-top:8px solid var(--lime);}
+
+  /* two-branch compare cards (Level 1) */
+  .branch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:6px;}
+  .branch-card{border:2px solid var(--line);border-radius:16px;padding:18px 20px;background:var(--panel);}
+  .branch-card.desc{border-top:8px solid var(--lime-deep);}
+  .branch-card.inf{border-top:8px solid var(--blue);}
+  .branch-card .b-tag{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .branch-card .b-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;display:block;margin:4px 0 8px;}
+  .branch-card p{font-size:13.5px;line-height:1.6;margin:0 0 8px;}
+  .branch-card .b-ex{font-size:12.5px;font-style:italic;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:8px;}
+  .branch-card .b-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .b-chip{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;background:var(--panel2);border-radius:8px;padding:3px 8px;}
+
+  /* L1/L7 quick check buttons */
+  .guess-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 6px;}
+  .guess{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;min-width:50px;padding:10px 16px;border:2px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer;transition:transform .1s ease;}
+  .guess:hover{transform:translateY(-2px);}
+  .guess:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+  .guess.right{background:var(--lime);} .guess.wrong{background:rgba(224,64,90,0.18);border-color:var(--red);}
+  .reveal-body{display:none;margin-top:14px;} .reveal-body.open{display:block;}
+
+  /* number chip row (raw data display) */
+  .num-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
+  .num-chip{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:8px 13px;}
+  .num-chip.hi{background:rgba(255,61,148,0.18);border-color:var(--pink);}
+  .num-chip.lo{background:rgba(47,125,255,0.14);border-color:var(--blue);}
+  .num-chip.mode-hit{background:rgba(164,217,37,0.3);border-color:var(--lime-deep);}
+
+  /* roadmap preview (Level 2) */
+  .road-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:6px;}
+  .road-card{display:flex;flex-direction:column;gap:3px;border:2px solid var(--line);border-top:6px solid var(--rc,var(--ink));border-radius:14px;padding:13px 14px;background:var(--panel);}
+  .road-card .rc-lvl{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--muted);}
+  .road-card .rc-ico{font-size:22px;}
+  .road-card .rc-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;line-height:1.25;}
+  .road-card .rc-desc{font-size:12px;color:var(--muted);line-height:1.4;}
+
+  /* 3-pillar mini flow (Level 2) */
+  .pillar-row{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;}
+  .pillar{flex:1;min-width:140px;text-align:center;border:2px solid var(--line);border-radius:14px;padding:14px 10px;background:var(--panel2);}
+  .pillar .p-ico{font-size:24px;display:block;}
+  .pillar .p-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;display:block;margin-top:4px;}
+  .pillar .p-sub{font-size:11.5px;color:var(--muted);display:block;margin-top:2px;}
+
+  /* dot strips (Level 6 warehouse comparison) */
+  .strip-wrap{margin-top:16px;}
+  .strip-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;margin-bottom:6px;}
+  .strip{position:relative;height:68px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;margin:0 6px;}
+  .strip .mline{position:absolute;top:0;bottom:0;width:3px;background:var(--pink);}
+  .strip .dot{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--blue);border:2px solid var(--ink);padding:0;cursor:pointer;transform:translate(-50%,0);}
+  .strip .dot:focus-visible,.strip .dot:hover{outline:3px solid var(--yellow);}
+  .strip .dot.sel{background:var(--yellow);}
+  .axis{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin:4px 6px 0;}
+  .strip-note{font-family:'JetBrains Mono',monospace;font-size:12px;min-height:20px;margin:8px 6px 0;font-weight:600;}
+  .ro-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:10px 6px 0;}
+  .ro{border:2px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--panel2);}
+  .ro .ro-l{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;}
+  .ro .ro-v{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;display:block;margin-top:2px;}
+
+  /* flow */
+  .mini-flow{display:flex;align-items:stretch;flex-wrap:wrap;margin:12px 0 18px;}
+  .mf-step{flex:1;min-width:130px;background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:11px 12px;text-align:center;}
+  .mf-step .mf-no{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--muted);display:block;}
+  .mf-step .mf-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;display:block;}
+  .mf-step .mf-sub{font-size:12px;color:var(--muted);display:block;margin-top:3px;}
+  .mf-step.hot{background:rgba(164,217,37,0.2);border-color:var(--lime-deep);}
+  .mf-arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px;padding:0 4px;flex:0 0 auto;}
+  @media (max-width:640px){ .mini-flow{flex-direction:column;} .mf-arrow{transform:rotate(90deg);padding:2px 0;} }
+
+  /* prompt box (Level 7 AI check) */
+  .prompt{font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;background:var(--ink);color:#e8f7d0;border-radius:14px;padding:16px 18px;border:2px solid var(--line);}
+  .prompt .p-tag{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--lime);margin-bottom:6px;}
+
+  /* click cards (recap match-up) */
+  .qq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+  .qq-card{border:2px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;transition:background .12s ease;}
+  .qq-card .qq-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;margin-bottom:4px;}
+  .qq-card .qq-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+  .qq-card .qq-a{display:none;font-size:13.5px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);line-height:1.6;}
+  .qq-card.revealed{background:var(--panel2);border-color:var(--lime);}
+  .qq-card.revealed .qq-a{display:block;} .qq-card.revealed .qq-hint{display:none;}
+  .qq-card:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+
+  .recap-statement{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(19px,3.4vw,26px);line-height:1.35;margin:6px 0 22px;}
+  .hl-pink{color:var(--pink);} .hl-blue{color:var(--blue);} .hl-yellow{color:#8a6a00;}
+  .success-grid{display:none;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px;}
+  .success-card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center;}
+  .success-card .sc-ico{font-size:22px;display:block;margin-bottom:4px;}
+  .success-card .sc-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13.5px;display:block;margin-bottom:3px;}
+  .success-card .sc-detail{font-size:11.5px;color:var(--muted);}
+  .next-tag{margin-top:20px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;}
+
+  /* Level 7: step-through SD calculation table */
+  .calc-wrap{overflow-x:auto;margin-top:6px;}
+  table.calc{border-collapse:separate;border-spacing:0;width:100%;min-width:400px;font-family:'JetBrains Mono',monospace;font-size:14px;border:2px solid var(--line);border-radius:14px;overflow:hidden;}
+  table.calc th{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:right;padding:9px 14px;background:var(--panel2);border-bottom:2px solid var(--line);}
+  table.calc td{padding:6px 14px;text-align:right;border-bottom:1px solid #e4e4dc;font-weight:600;}
+  table.calc th:first-child, table.calc td:first-child{text-align:left;}
+  table.calc tfoot td{border-top:2px solid var(--line);border-bottom:none;background:var(--panel2);font-weight:700;}
+  table.calc .c{visibility:hidden;} table.calc .c.on{visibility:visible;animation:pop .25s ease;}
+  table.calc .neg{color:var(--red);} table.calc .pos{color:var(--green);}
+  .step-note{font-size:14.5px;line-height:1.55;font-weight:500;min-height:52px;margin:12px 0 10px;padding:12px 16px;border-left:4px solid var(--pink);background:rgba(255,61,148,0.06);border-radius:0 12px 12px 0;}
+  .step-note .fx{display:block;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:700;}
+  .start-btn:disabled{opacity:.5;cursor:default;}
+  .src-link{color:var(--blue);font-weight:700;}
+  /* Level 7: band strip + try-it */
+  .strip .band{position:absolute;top:0;bottom:0;}
+  .strip .band.b2{background:rgba(255,195,40,0.22);} .strip .band.b1{background:rgba(164,217,37,0.32);}
+  .band-key{display:flex;flex-wrap:wrap;gap:8px;margin:8px 6px 0;}
+  .band-key span{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;border-radius:8px;padding:3px 8px;}
+  .try-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0 4px;}
+  .try-row input{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;width:130px;padding:10px 12px;border:2px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);}
+  .try-row input:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+  .try-fb{font-size:14px;font-weight:600;line-height:1.5;margin-top:6px;min-height:20px;}
+
+  /* Level 1: course pipeline (Ask → Decide) with Ask→Analyze link */
+  .pipe{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:8px 0 0;}
+  .pipe-step{border:2px solid var(--line);border-radius:12px;padding:10px 9px;background:var(--panel2);display:flex;flex-direction:column;gap:3px;}
+  .pipe-step .ps-no{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--muted);}
+  .pipe-step .ps-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;}
+  .pipe-step .ps-sub{font-size:12px;line-height:1.35;}
+  .pipe-step .ps-ex{font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.45;color:var(--muted);border-top:1px dashed var(--line);padding-top:5px;margin-top:3px;}
+  .pipe-step.key{background:rgba(164,217,37,0.22);border-color:var(--lime-deep);}
+  .pipe-step.dim{opacity:.55;}
+  .pipe-link{display:grid;grid-template-columns:repeat(12,1fr);}
+  .pipe-link .pl-arc{grid-column:2 / 8;height:30px;border:2px dashed var(--pink);border-top:none;border-radius:0 0 14px 14px;position:relative;}
+  .pipe-link .pl-arc::before,.pipe-link .pl-arc::after{content:'';position:absolute;top:-2px;width:8px;height:8px;background:var(--pink);border-radius:50%;transform:translateX(-50%);}
+  .pipe-link .pl-arc::before{left:-1px;} .pipe-link .pl-arc::after{left:calc(100% + 1px);}
+  .pipe-link .pl-arc span{position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);white-space:nowrap;background:var(--panel);padding:0 8px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--pink);}
+  @media (max-width:720px){
+    .pipe{grid-template-columns:repeat(3,1fr);}
+    .pipe-link{display:none;}
+  }
+
+  /* Level 7: expandable real-world use cases */
+  .uc-grid{display:none;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px;}
+  @media (max-width:640px){ .uc-grid{grid-template-columns:1fr;} }
+  .uc-grid.open{display:grid;animation:pop .22s ease;}
+  .uc-card{border:2px solid var(--line);border-top:8px solid var(--uc,var(--ink));border-radius:16px;padding:15px 17px;background:var(--panel);display:flex;flex-direction:column;gap:6px;}
+  .uc-card .uc-ico{font-size:24px;}
+  .uc-card .uc-field{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .uc-card .uc-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;line-height:1.3;}
+  .uc-card .uc-body{font-size:13.5px;line-height:1.55;}
+  .uc-card .uc-ex{font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.6;background:var(--panel2);border-radius:8px;padding:8px 10px;}
+  .uc-card .uc-note{font-size:12px;font-style:italic;color:var(--muted);border-top:1px dashed var(--line);padding-top:7px;margin-top:auto;}
+
+  /* Level 2: fitness tracker (10-day goal strip) */
+  .day-row{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:10px 0 4px;}
+  .day{border:2px solid var(--line);border-radius:10px;padding:7px 2px;text-align:center;background:var(--panel2);}
+  .day .d-no{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--muted);display:block;}
+  .day .d-mark{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;display:block;}
+  .day.met{background:rgba(164,217,37,0.32);border-color:var(--lime-deep);}
+  .day.miss{background:rgba(224,64,90,0.10);border-color:var(--red);}
+  @media (max-width:560px){ .day-row{grid-template-columns:repeat(5,1fr);} }
+  .ask-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:6px;}
+  .ask{border:2px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--panel);}
+  .ask .a-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;display:block;}
+  .ask .a-kind{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin:2px 0 6px;}
+  .ask .a-ex{font-size:12.5px;line-height:1.5;display:block;}
+  .limit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:6px;}
+  .limit{border:2px solid var(--red);border-radius:14px;padding:13px 15px;background:rgba(224,64,90,0.05);}
+  .limit .l-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;display:block;margin-bottom:4px;}
+  .limit .l-ex{font-size:12.5px;line-height:1.55;display:block;}
+
+  /* Level 8: bridge sort (descriptive vs needs inferential) */
+  .sort-list{display:flex;flex-direction:column;gap:10px;margin-top:6px;}
+  .sort-item{border:2px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--panel);}
+  .sort-item .s-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;display:block;margin-bottom:8px;}
+  .sort-item .guess-row{margin:0;}
+  .sort-item .guess{font-size:13px;padding:8px 12px;}
+  .sort-item .s-a{display:none;font-size:13.5px;line-height:1.55;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+  .sort-item.done .s-a{display:block;}
+
+  @media (max-width:560px){ .lvl{min-width:100%;} }
+</style>
+</head>
+<body>
+
+<div id="hello">
+  <div class="badge">Session 07</div>
+  <h1>Two kinds of statistics.<br>One <span>toolkit</span> for today.</h1>
+  <p class="sub">Statistics splits into two branches. Today is the first one: descriptive statistics, and the four tools inside it &mdash; mean, median, mode, and standard deviation. You'll also find exactly where descriptive statistics runs out, which is why next class is about the second branch.</p>
+  <button class="start-btn" id="startBtn">Let's go ▶</button>
+</div>
+
+<div id="app">
+
+  <div class="hud-top">
+    <span class="tag">Progress</span>
+    <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+    <span class="xp-count" id="xpCount">LVL 1 / 8</span>
+  </div>
+
+  <div class="levels">
+    <div class="lvl active" data-lvl="1"><small>L1 · 5 MIN</small>2 Branches 🌳</div>
+    <div class="lvl" data-lvl="2"><small>L2 · 7 MIN</small>Descriptive 🔍</div>
+    <div class="lvl" data-lvl="3"><small>L3 · 8 MIN</small>Mean 🎯</div>
+    <div class="lvl" data-lvl="4"><small>L4 · 8 MIN</small>Median ⚖️</div>
+    <div class="lvl" data-lvl="5"><small>L5 · 6 MIN</small>Mode 🔁</div>
+    <div class="lvl" data-lvl="6"><small>L6 · 7 MIN</small>Std Dev 📏</div>
+    <div class="lvl" data-lvl="7"><small>L7 · 12 MIN</small>Calc + Use 🧮</div>
+    <div class="lvl" data-lvl="8"><small>L8 · 7 MIN</small>Recap + Next 🤖</div>
+  </div>
+
+  <div class="stage">
+
+    <!-- LEVEL 1: TWO BRANCHES -->
+    <div class="page active" id="page-1">
+      <h2>Statistics splits into two branches 🌳<span class="time-tag">5 MIN</span></h2>
+      <p class="lede">Before any formula, know which one you're doing. They answer completely different questions.</p>
+
+      <div class="section-tag">Where today fits in our 6 steps</div>
+      <div class="pipe" role="list" aria-label="Ask, Collect, Clean, Analyze, Visualize, Decide">
+        <div class="pipe-step key" role="listitem"><span class="ps-no">1</span><span class="ps-title">Ask</span><span class="ps-sub">question <b>+ population</b></span><span class="ps-ex">How well is this person keeping up with their step goal? · this person, 10 days</span></div>
+        <div class="pipe-step" role="listitem"><span class="ps-no">2</span><span class="ps-title">Collect</span><span class="ps-sub">all of it, or a sample?</span><span class="ps-ex">all 10 days logged</span></div>
+        <div class="pipe-step dim" role="listitem"><span class="ps-no">3</span><span class="ps-title">Clean</span></div>
+        <div class="pipe-step key" role="listitem"><span class="ps-no">4</span><span class="ps-title">Analyze</span><span class="ps-sub">descriptive or inferential?</span><span class="ps-ex">we have all of it → descriptive</span></div>
+        <div class="pipe-step dim" role="listitem"><span class="ps-no">5</span><span class="ps-title" style="color:var(--blue);">Visualize</span></div>
+        <div class="pipe-step dim" role="listitem"><span class="ps-no">6</span><span class="ps-title" style="color:#8a6a00;">Decide</span></div>
+      </div>
+      <div class="pipe-link" aria-hidden="true"><div class="pl-arc"><span>the population you set in Ask picks the branch in Analyze</span></div></div>
+      <div class="box rule" style="margin-top:22px;">
+        <div class="dl">The rule</div>
+        <p>Measured everyone your question is about? Describe it. Measured only some of them? You'll need inferential statistics to say anything about the rest.</p>
+      </div>
+
+      <div class="branch-grid">
+        <div class="branch-card desc">
+          <span class="b-tag">Branch 1</span>
+          <span class="b-title">Descriptive Statistics</span>
+          <p>Describes what you already have. No guessing beyond the data in front of you.</p>
+          <div class="b-ex">"The average age in this class is 20."</div>
+          <div class="b-meta"><span class="b-chip">Current dataset</span><span class="b-chip">No probability theory</span></div>
+        </div>
+        <div class="branch-card inf">
+          <span class="b-tag">Branch 2</span>
+          <span class="b-title">Inferential Statistics</span>
+          <p>Uses a sample to make a guess about a much bigger group you didn't fully measure.</p>
+          <div class="b-ex">"Based on a survey of 500 voters, about 52% of the city supports the new policy."</div>
+          <div class="b-meta"><span class="b-chip">Sample → population</span><span class="b-chip">Needs probability theory</span></div>
+        </div>
+      </div>
+
+      <div class="box hook">
+        <div class="dl">Quick check</div>
+        <p>"This group's average commute is 24 minutes." Is that descriptive, or inferential?</p>
+      </div>
+      <div class="guess-row" id="l1Guess">
+        <button class="guess" data-g="desc">Descriptive</button>
+        <button class="guess" data-g="inf">Inferential</button>
+      </div>
+      <div class="reveal-body" id="l1Reveal">
+        <div class="box discuss">
+          <div class="dl">Answer</div>
+          <p><b>Descriptive.</b> It only reports what was measured in this group &mdash; nobody's generalizing to commuters everywhere. The moment someone says "so most commuters probably take about 24 minutes," that's a jump to inferential.</p>
+        </div>
+      </div>
+
+      <div class="box discuss">
+        <div class="dl">Worth knowing</div>
+        <p>Even when a study's big conclusion is inferential, the descriptive statistics are always shown first. You can't generalize from data you haven't even described yet.</p>
+      </div>
+      <div class="box rule">
+        <div class="dl">Today's scope</div>
+        <p>Descriptive statistics only. Inferential statistics (sampling, margins of error, "is this difference real or luck") is <b>next class</b>. By the end of today you'll see exactly why you need it.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 2: DESCRIPTIVE STATISTICS -->
+    <div class="page" id="page-2">
+      <h2>What descriptive statistics actually does 🔍<span class="time-tag">7 MIN</span></h2>
+      <p class="lede">One job: summarize, organize, and describe what's already in front of you, before anyone decides anything.</p>
+
+      <div class="section-tag">Example: one person's fitness tracker, 10 days</div>
+      <div class="day-row" id="dayRow"></div>
+      <div class="ro-row" style="margin:10px 0 0;">
+        <div class="ro"><span class="ro-l">Step goal met</span><span class="ro-v">6 of 10 days = 60%</span></div>
+        <div class="ro"><span class="ro-l">Max heart rate</span><span class="ro-v">140 bpm</span></div>
+        <div class="ro"><span class="ro-l">Average heart rate</span><span class="ro-v">72 bpm</span></div>
+      </div>
+      <div class="box discuss">
+        <div class="dl">That's descriptive statistics</div>
+        <p>Ten days of step counts and heart-rate readings, squeezed into three numbers you can read in two seconds. Nothing is guessed. Every number comes straight from the data the tracker logged.</p>
+      </div>
+
+      <div class="section-tag">Questions descriptive statistics answers</div>
+      <div class="ask-grid">
+        <div class="ask"><span class="a-q">How many?</span><span class="a-kind">count</span><span class="a-ex">10 days logged.</span></div>
+        <div class="ask"><span class="a-q">From what to what?</span><span class="a-kind">range</span><span class="a-ex">How low and how high did heart rate go? Top was 140 bpm.</span></div>
+        <div class="ask"><span class="a-q">How often?</span><span class="a-kind">frequency</span><span class="a-ex">The goal was met 6 times.</span></div>
+        <div class="ask"><span class="a-q">Any trend?</span><span class="a-kind">pattern over time</span><span class="a-ex">Did daily steps climb or drop across the 10 days?</span></div>
+      </div>
+      <div class="box sheets">
+        <div class="dl">Number or picture</div>
+        <p>The answer can be a number (60%) or a chart. Pie charts, bar charts and histograms are the usual ones, the same charts you built in Session 05.</p>
+      </div>
+
+      <div class="pillar-row" style="margin-top:18px;">
+        <div class="pillar"><span class="p-ico">🎯</span><span class="p-title">Center</span><span class="p-sub">what's typical</span></div>
+        <div class="pillar"><span class="p-ico">📏</span><span class="p-title">Spread</span><span class="p-sub">how different things are</span></div>
+        <div class="pillar"><span class="p-ico">📐</span><span class="p-title">Shape</span><span class="p-sub">balanced, or lopsided</span></div>
+      </div>
+
+      <div class="section-tag">🚧 Where descriptive statistics stops</div>
+      <p style="font-size:14px;margin:0 0 4px;">It describes the current or past state of the data you have. That's all. Three things it can't do:</p>
+      <div class="limit-grid">
+        <div class="limit"><span class="l-title">❌ Draw a conclusion</span><span class="l-ex">"60% means this person is in poor health." The data doesn't say that. Maybe the goal is too high, maybe they were sick for 4 days.</span></div>
+        <div class="limit"><span class="l-title">❌ Predict beyond the data</span><span class="l-ex">"People with a similar age and weight will also hit their goal about 60% of the time." You only measured one person.</span></div>
+        <div class="limit"><span class="l-title">❌ Settle a group comparison</span><span class="l-ex">Two friends average 58% and 62%. You can describe that gap, but you can't say whether it's a real difference or just 10 lucky days.</span></div>
+      </div>
+      <div class="box rule">
+        <div class="dl">This is where inferential statistics comes in</div>
+        <p>Every one of those three jumps needs the second branch. That's next class. Today, get really good at describing first.</p>
+      </div>
+
+      <div class="section-tag">Today's 4 tools, in order</div>
+      <div class="road-grid">
+        <div class="road-card" style="--rc:var(--lime-deep);"><span class="rc-lvl">LEVEL 3</span><span class="rc-ico">🎯</span><span class="rc-title">Mean</span><span class="rc-desc">where is the typical value?</span></div>
+        <div class="road-card" style="--rc:#8a6a00;"><span class="rc-lvl">LEVEL 4</span><span class="rc-ico">⚖️</span><span class="rc-title">Median</span><span class="rc-desc">what's the center when an outlier shows up?</span></div>
+        <div class="road-card" style="--rc:var(--blue);"><span class="rc-lvl">LEVEL 5</span><span class="rc-ico">🔁</span><span class="rc-title">Mode</span><span class="rc-desc">which value shows up most?</span></div>
+        <div class="road-card" style="--rc:var(--pink);"><span class="rc-lvl">LEVEL 6</span><span class="rc-ico">📏</span><span class="rc-title">Standard Deviation</span><span class="rc-desc">how far do values typically stray?</span></div>
+      </div>
+      <div class="box discuss">
+        <div class="dl">Notice</div>
+        <p>Mean, median and mode are all answers to the same question &mdash; "what's typical?" &mdash; just for different kinds of data. Standard deviation answers a different question entirely: once you know what's typical, how much can you trust it?</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 3: MEAN -->
+    <div class="page" id="page-3">
+      <h2>Mean: where's the typical value? 🎯<span class="time-tag">8 MIN</span></h2>
+      <p class="lede">The one almost everyone already knows &mdash; and the one that's easiest to fool.</p>
+
+      <div class="wwh">
+        <div class="wwh-card"><span class="w-ico">❓</span><span class="w-tag">Question it answers</span><span class="w-title">Where's the typical value?</span>
+          <span class="w-desc">You have a pile of numbers. One number has to stand in for all of them.</span></div>
+        <div class="wwh-card"><span class="w-ico">📖</span><span class="w-tag">What it is</span><span class="w-title">Sum ÷ count</span>
+          <span class="w-desc">Add up every value, divide by how many there are.</span></div>
+        <div class="wwh-card"><span class="w-ico">🛠️</span><span class="w-tag">Use it when</span><span class="w-title">Data is well-behaved</span>
+          <span class="w-desc">Roughly symmetric, no extreme outliers. It uses every value, which is also why one giant outlier can drag it off course.</span></div>
+      </div>
+
+      <div class="section-tag">Example: 10 exam scores</div>
+      <div class="num-row" id="examNums"></div>
+      <div class="box hook" style="margin-top:0;">
+        <div class="dl">Guess first</div>
+        <p>Just eyeballing those 10 scores, what do you think the mean is?</p>
+      </div>
+      <div class="guess-row" id="meanGuess">
+        <button class="guess" data-g="70">70</button>
+        <button class="guess" data-g="75">75</button>
+        <button class="guess" data-g="81">81</button>
+        <button class="guess" data-g="86">86</button>
+      </div>
+      <div class="reveal-body" id="meanReveal">
+        <div class="box discuss">
+          <div class="dl">Reveal</div>
+          <p id="meanRevealText"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 4: MEDIAN -->
+    <div class="page" id="page-4">
+      <h2>Median: the center when something's weird ⚖️<span class="time-tag">8 MIN</span></h2>
+      <p class="lede">Same 10 scores. Watch what happens when one of them stops being normal.</p>
+
+      <div class="wwh">
+        <div class="wwh-card"><span class="w-ico">❓</span><span class="w-tag">Question it answers</span><span class="w-title">What's the center when outliers exist?</span>
+          <span class="w-desc">The mean moves whenever any value moves. Sometimes you want a number that doesn't.</span></div>
+        <div class="wwh-card"><span class="w-ico">📖</span><span class="w-tag">What it is</span><span class="w-title">The middle value, sorted</span>
+          <span class="w-desc">Line every value up in order. Odd count: the middle one. Even count: average the two middle ones.</span></div>
+        <div class="wwh-card"><span class="w-ico">🛠️</span><span class="w-tag">Use it when</span><span class="w-title">Data is skewed</span>
+          <span class="w-desc">Income, home prices, hospital wait times &mdash; anywhere a few huge values would otherwise hijack the average.</span></div>
+      </div>
+
+      <div class="section-tag">Same 10 exam scores</div>
+      <div class="num-row" id="examNums2"></div>
+      <div class="box discuss" style="margin-top:0;">
+        <div class="dl">Right now</div>
+        <p>Sorted, the middle two scores are 80 and 82 &rarr; median = <b>81</b>. Mean was also <b>81</b>. When data isn't skewed, mean and median agree almost exactly.</p>
+      </div>
+
+      <div class="box hook">
+        <div class="dl">Now imagine</div>
+        <p>That top score wasn't a 95 &mdash; it was a data-entry slip, and it's actually <b>190</b>. Guess first: does the median change?</p>
+      </div>
+      <div class="guess-row" id="medianGuess">
+        <button class="guess" data-g="yes">Yes, it changes</button>
+        <button class="guess" data-g="no">No, it stays the same</button>
+      </div>
+      <div class="reveal-body" id="medianReveal">
+        <div class="box discuss">
+          <div class="dl">Reveal</div>
+          <p id="medianRevealText"></p>
+        </div>
+        <div class="num-row" id="examNums3"></div>
+      </div>
+
+      <div class="box gotcha">
+        <div class="dl">🚩 Why this matters</div>
+        <p>If a news article says "average home price," check whether it means mean or median. A handful of mansions can drag a mean up by a lot; the median tells you what a typical buyer is actually facing.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 5: MODE -->
+    <div class="page" id="page-5">
+      <h2>Mode: what shows up most? 🔁<span class="time-tag">6 MIN</span></h2>
+      <p class="lede">The only one of the three that works on categories, not just numbers.</p>
+
+      <div class="wwh">
+        <div class="wwh-card"><span class="w-ico">❓</span><span class="w-tag">Question it answers</span><span class="w-title">Which value appears most often?</span>
+          <span class="w-desc">Not the typical size in the "average" sense &mdash; the single most common one.</span></div>
+        <div class="wwh-card"><span class="w-ico">📖</span><span class="w-tag">What it is</span><span class="w-title">The most frequent value</span>
+          <span class="w-desc">Count how often each value shows up. The winner is the mode.</span></div>
+        <div class="wwh-card"><span class="w-ico">🛠️</span><span class="w-tag">Use it when</span><span class="w-title">Data is categorical</span>
+          <span class="w-desc">Favorite flavor, most-used browser, most common shift start time &mdash; anything you can't add up and divide.</span></div>
+      </div>
+
+      <div class="section-tag">Example: shoe sizes in a class of 8</div>
+      <div class="num-row" id="shoeNums"></div>
+      <div class="box discuss" style="margin-top:0;">
+        <div class="dl">Reveal</div>
+        <p>Size <b>8</b> shows up 3 times &mdash; more than any other size. Mode = <b>8</b>. (For comparison: the mean here is 8.75, a size that doesn't even exist in the data.)</p>
+      </div>
+
+      <div class="section-tag">Where mean and median can't even play</div>
+      <div class="box hook" style="margin-top:0;">
+        <div class="dl">Class poll: favorite color</div>
+        <p>Blue, Blue, Green, Red, Blue, Yellow, Green, Blue</p>
+      </div>
+      <div class="box gotcha">
+        <div class="dl">🚩 Try to average that</div>
+        <p>You cannot add "Blue + Green" and divide by two. Mean and median need numbers in order; colors have neither. Mode still works: <b>Blue</b>, with 4 of 8 votes. For categories, mode isn't just one option among three &mdash; it's the only one that applies.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 6: STANDARD DEVIATION -->
+    <div class="page" id="page-6">
+      <h2>Standard deviation: how spread out is it? 📏<span class="time-tag">7 MIN</span></h2>
+      <p class="lede">The typical value tells you the center. It says nothing about how much to trust it.</p>
+
+      <div class="section-tag">Same average. Totally different reality.</div>
+      <div class="chip-row" style="display:flex;flex-wrap:wrap;gap:10px;margin:0 0 6px;">
+        <div class="b-chip" style="padding:6px 10px;">🧪 Illustrative shipping times, just for this comparison</div>
+      </div>
+      <div class="strip-wrap">
+        <div class="strip-title">Warehouse A &mdash; 5 shipments (days to deliver)</div>
+        <div class="strip" id="stripA"></div>
+        <div class="axis"><span>0</span><span id="axisAMax"></span></div>
+        <div class="strip-note" id="noteA">Tap a dot to see which shipment it is.</div>
+        <div class="ro-row" id="roA"></div>
+      </div>
+      <div class="strip-wrap" style="margin-top:14px;">
+        <div class="strip-title">Warehouse B &mdash; 5 shipments (days to deliver)</div>
+        <div class="strip" id="stripB"></div>
+        <div class="axis"><span>0</span><span id="axisBMax"></span></div>
+        <div class="strip-note" id="noteB">Tap a dot to see which shipment it is.</div>
+        <div class="ro-row" id="roB"></div>
+      </div>
+      <div class="box discuss">
+        <div class="dl">Notice</div>
+        <p>Both warehouses average exactly <b>5 days</b>. Quoted only on average, they look identical. Promise a customer "5 days" from Warehouse B and you'll be wrong a lot more often. The mean alone can't tell these two apart &mdash; you need a second number.</p>
+      </div>
+
+      <div class="wwh">
+        <div class="wwh-card"><span class="w-ico">❓</span><span class="w-tag">Question it answers</span><span class="w-title">How far do values typically stray?</span>
+          <span class="w-desc">A tight cluster and a wide scatter can share the exact same mean.</span></div>
+        <div class="wwh-card"><span class="w-ico">📖</span><span class="w-tag">What it is</span><span class="w-title">The typical distance from the mean</span>
+          <span class="w-desc">Small std dev = tight cluster. Big std dev = wide scatter. It's in the same units as your data, unlike variance, which is squared and not human-readable.</span></div>
+        <div class="wwh-card"><span class="w-ico">🛠️</span><span class="w-tag">Use it when</span><span class="w-title">Data is roughly bell-shaped</span>
+          <span class="w-desc">That's when "most values fall within about 1 std dev of the mean" actually holds up.</span></div>
+      </div>
+
+      <div class="box hook">
+        <div class="dl">Next level</div>
+        <p>Where does a number like 3.16 come from? Next you'll calculate one by hand, then use it to answer a real question.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 7: CALCULATE + APPLY -->
+    <div class="page" id="page-7">
+      <h2>Calculate it, then use it 🧮<span class="time-tag">12 MIN</span></h2>
+      <p class="lede">A machine fills 250 g bags of coffee. The mean will say the machine is perfect. Standard deviation tells you whether it's <i>consistent</i>. You'll work it out in five steps, then use it on a basketball player's scoring.</p>
+      <div class="chip-row" style="display:flex;flex-wrap:wrap;gap:10px;margin:0 0 6px;">
+        <div class="b-chip" style="padding:6px 10px;">📚 Both examples adapted from <a class="src-link" href="https://statisticsfundamentals.com/descriptive-statistics/standard-deviation-examples/" target="_blank" rel="noopener">Statistics Fundamentals: Standard Deviation Examples</a></div>
+      </div>
+
+      <div class="section-tag">The recipe: 5 steps</div>
+      <div class="mini-flow">
+        <div class="mf-step"><span class="mf-no">STEP 1</span><span class="mf-title">Find the mean</span><span class="mf-sub">the center</span></div>
+        <div class="mf-arrow">→</div>
+        <div class="mf-step"><span class="mf-no">STEP 2</span><span class="mf-title">Subtract the mean</span><span class="mf-sub">how far is each value?</span></div>
+        <div class="mf-arrow">→</div>
+        <div class="mf-step"><span class="mf-no">STEP 3</span><span class="mf-title">Square each one</span><span class="mf-sub">gets rid of minus signs</span></div>
+        <div class="mf-arrow">→</div>
+        <div class="mf-step"><span class="mf-no">STEP 4</span><span class="mf-title">Average the squares</span><span class="mf-sub">÷ (count − 1) = variance</span></div>
+        <div class="mf-arrow">→</div>
+        <div class="mf-step hot"><span class="mf-no">STEP 5</span><span class="mf-title">Square root</span><span class="mf-sub">back to real units = std dev</span></div>
+      </div>
+
+      <div class="section-tag">Worked example: 10 bags off the line (grams)</div>
+      <div class="calc-wrap">
+        <table class="calc" id="calcTable">
+          <thead><tr><th>Bag</th><th>Grams</th><th class="c" data-step="2">Minus 250</th><th class="c" data-step="3">Squared</th></tr></thead>
+          <tbody id="calcBody"></tbody>
+          <tfoot id="calcFoot"></tfoot>
+        </table>
+      </div>
+      <div class="step-note" id="stepNote" aria-live="polite"></div>
+      <div><button class="start-btn small" id="stepBtn">Step 1 ▶</button> <button class="start-btn small alt" id="stepReset">↺ Start over</button></div>
+
+      <div class="box gotcha">
+        <div class="dl">🚩 ÷ 10 or ÷ 9? You'll see both</div>
+        <p>Divide by the count (÷ 10) when you measured <b>everything</b> you care about: <code class="f">=STDEV.P</code> gives <b>1.41 g</b>. Divide by count − 1 (÷ 9) when your data is a <b>sample</b> of something bigger, like 10 bags out of a whole day's run: <code class="f">=STDEV</code> gives <b>1.49 g</b>. The source page uses ÷ 10. For a machine that fills thousands of bags, ÷ 9 is the safer choice, because a small sample tends to underestimate the spread. When AI gives you a standard deviation, ask which one it used.</p>
+      </div>
+      <div class="box sheets">
+        <div class="dl">In Sheets</div>
+        <p>Put the 10 weights in A2:A11. <code class="f">=AVERAGE(A2:A11)</code> → 250, <code class="f">=STDEV(A2:A11)</code> → 1.49. Two seconds. Doing it by hand once is how you learn what the second number means.</p>
+      </div>
+      <div class="box discuss">
+        <div class="dl">So what? Quality control</div>
+        <p>The label promises 250 g, and the factory accepts anything from 248 to 252 g. A standard deviation of about 1.5 g means a typical bag lands within 1.5 g of target, so the machine passes. If next week the mean is still exactly 250 but the standard deviation jumps to 3 g, lots of bags will fall outside 248 to 252. The mean wouldn't notice that. The standard deviation would, and that's why factories track it.</p>
+      </div>
+
+      <div class="section-tag">Use it: how unusual is one game?</div>
+      <div class="box hook" style="margin-top:0;">
+        <div class="dl">The question</div>
+        <p>A player scored in 10 tournament games. One night they scored 31. Was that a freak game, or just a good night? To find out, measure the distance in <b>standard deviations</b>: (score − mean) ÷ std dev.</p>
+      </div>
+      <div class="strip-wrap">
+        <div class="strip-title">Points per game, 10 games</div>
+        <div class="strip" id="stripC"></div>
+        <div class="axis"><span id="axisCMin"></span><span id="axisCMax"></span></div>
+        <div class="band-key"><span style="background:rgba(164,217,37,0.32);">within 1 std dev: typical</span><span style="background:rgba(255,195,40,0.22);">1 to 2 std devs: noticeable</span><span style="background:var(--panel2);border:1px solid var(--line);">beyond 2: unusual, look closer</span></div>
+        <div class="strip-note" id="noteC">Tap a game to see how many std devs it is from the mean.</div>
+        <div class="ro-row" id="roC"></div>
+      </div>
+      <div class="box discuss">
+        <div class="dl">Reading it</div>
+        <p id="bballText"></p>
+      </div>
+
+      <div class="section-tag">Your turn: calculate this player's std dev</div>
+      <p style="font-size:14px;margin:0;">Points: 22, 18, 31, 25, 19, 27, 24, 30, 21, 23. Use the five steps, then type your answer (2 decimals).</p>
+      <div class="try-row">
+        <input id="tryIn" inputmode="decimal" placeholder="e.g. 3.50" aria-label="Your standard deviation answer">
+        <button class="start-btn small" id="tryBtn">Check</button>
+        <button class="start-btn small alt" id="tryHint">Hint</button>
+      </div>
+      <div class="try-fb" id="tryFb" aria-live="polite"></div>
+
+      <div style="margin-top:22px;"><button class="start-btn small alt" id="ucBtn" aria-expanded="false" aria-controls="ucGrid">🌍 Where else is std dev used? ▼</button></div>
+      <div class="uc-grid" id="ucGrid">
+        <div class="uc-card" style="--uc:var(--green);">
+          <span class="uc-ico">📈</span><span class="uc-field">Finance</span>
+          <span class="uc-q">How bumpy is this investment?</span>
+          <span class="uc-body">The std dev of an investment's returns is called its <b>volatility</b>. Low = returns are steady month to month. High = big swings up and down, which investors treat as higher risk.</span>
+          <span class="uc-ex">Fund A monthly returns: 1, 1, 2, 0, 1 %<br>Fund B monthly returns: 6, −4, 5, −3, 1 %<br>Both average <b>1%</b>. Std dev: A ≈ <b>0.7%</b>, B ≈ <b>4.5%</b>.</span>
+          <span class="uc-note">Same idea as the two warehouses in Level 6: identical average, very different ride.</span>
+        </div>
+        <div class="uc-card" style="--uc:var(--lime-deep);">
+          <span class="uc-ico">🏭</span><span class="uc-field">Quality control</span>
+          <span class="uc-q">Is production consistent?</span>
+          <span class="uc-body">Factories track std dev on every line. Small std dev = products land close to spec, so less waste and fewer defects. A rising std dev is an early warning, even while the average still looks perfect.</span>
+          <span class="uc-note">You already did this one: the coffee bags above.</span>
+        </div>
+        <div class="uc-card" style="--uc:var(--blue);">
+          <span class="uc-ico">🏀</span><span class="uc-field">Sports analytics</span>
+          <span class="uc-q">How consistent is this player, or team?</span>
+          <span class="uc-body">Two players can average the same points. The one with the smaller std dev is the one a coach can count on every night. Teams use the same idea for lap times, serve speeds, or goals per match.</span>
+          <span class="uc-note">You already did this one too: the 31-point game.</span>
+        </div>
+        <div class="uc-card" style="--uc:var(--pink);">
+          <span class="uc-ico">📝</span><span class="uc-field">Education</span>
+          <span class="uc-q">How spread out are the exam scores?</span>
+          <span class="uc-body">A high std dev means students landed far apart: some aced it, some struggled. That's a cue to ask why (was the test a poor fit for part of the class?), not proof that it was too hard. Std dev also lets you compare scores across different tests fairly.</span>
+          <span class="uc-ex">You score 85 on two tests, both with mean 75.<br>Test 1 std dev 5 → (85 − 75) ÷ 5 = <b>+2</b>: near the top.<br>Test 2 std dev 20 → (85 − 75) ÷ 20 = <b>+0.5</b>: just above average.</span>
+          <span class="uc-note">Same "how many std devs away?" ruler as the basketball example.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVEL 8: RECAP + AI -->
+    <div class="page" id="page-8">
+      <h2>That's today 🎉<span class="time-tag">7 MIN</span></h2>
+      <p class="recap-statement">One branch (<span class="hl-pink">descriptive</span>), four tools: <span class="hl-blue">mean</span>, <span class="hl-blue">median</span>, <span class="hl-blue">mode</span>, and <span class="hl-yellow">standard deviation</span> &mdash; each answering a different question about the same pile of numbers.</p>
+
+      <div class="section-tag">Quick match: which tool answers which question?</div>
+      <div class="qq-grid" id="matchGrid"></div>
+
+      <div class="section-tag">Try it with AI</div>
+      <div class="prompt">
+        <span class="p-tag">Paste-ready prompt</span>
+        <span id="promptText">Here are 10 numbers: 65, 72, 75, 78, 80, 82, 85, 88, 90, 95. Give me the mean, median, mode (if one exists), and standard deviation. Show your work, say whether you used the sample or population standard deviation, and tell me which of these numbers is most useful here and why.</span>
+      </div>
+      <div style="margin-top:10px;"><button class="start-btn small alt" id="copyBtn">📋 Copy prompt</button> <span id="copyMsg" style="font-family:'JetBrains Mono',monospace;font-size:12px;margin-left:8px;"></span></div>
+      <div class="box gotcha">
+        <div class="dl">🚩 Check it</div>
+        <p>Mean and median should both land on <b>81</b>. There's no repeated value in this set, so a good answer says there's no mode, rather than inventing one. Std dev should be about <b>8.98</b> (÷ 9, like <code class="f">=STDEV</code>). If AI says about <b>8.52</b>, it divided by 10: ask it which formula it used and why. If AI's numbers don't match either one, recompute by hand before you trust either one.</p>
+      </div>
+
+      <div style="margin-top:18px;"><button class="start-btn small" id="revealSuccessBtn">🔑 What carries forward</button></div>
+      <div class="success-grid" id="successGrid">
+        <div class="success-card"><span class="sc-ico">🌳</span><span class="sc-title">Know your branch</span><span class="sc-detail">descriptive describes; inferential generalizes</span></div>
+        <div class="success-card"><span class="sc-ico">🎯</span><span class="sc-title">Pick the right "typical"</span><span class="sc-detail">mean, median, or mode depending on the data</span></div>
+        <div class="success-card"><span class="sc-ico">📏</span><span class="sc-title">Always pair it with spread</span><span class="sc-detail">a typical value alone can hide the real story</span></div>
+        <div class="success-card"><span class="sc-ico">🚧</span><span class="sc-title">Know where it stops</span><span class="sc-detail">no conclusions, no predictions, no "is this gap real?" without inferential</span></div>
+      </div>
+
+      <div class="section-tag">Bridge to next class: can descriptive statistics answer it?</div>
+      <p style="font-size:14px;margin:0 0 4px;">Same fitness tracker: 6 of 10 days goal met, max heart rate 140 bpm, average 72 bpm. Sort each sentence.</p>
+      <div class="sort-list" id="sortList"></div>
+
+      <div class="box hook">
+        <div class="dl">Next class: inferential statistics</div>
+        <p>Every "needs inferential" sentence above is the kind of question people actually care about: is this person healthy, will others behave the same, is that difference real? Descriptive statistics hands you the facts. Inferential statistics is how you reach past them carefully, and know how sure you can be.</p>
+      </div>
+
+      <div class="chip-row" style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;">
+        <div class="b-chip" style="padding:6px 10px;">🅿️ Parked for later: correlation</div>
+      </div>
+      <div class="next-tag">Next → bring your own small set of numbers and find its mean, median, mode, and standard deviation before class. Then write one sentence about it that descriptive statistics <b>can't</b> answer. We'll start there.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('hello').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+});
+document.querySelectorAll('.lvl').forEach(l => l.addEventListener('click', () => activateLevel(l.dataset.lvl)));
+function activateLevel(id){
+  const total = document.querySelectorAll('.lvl').length;
+  document.querySelectorAll('.lvl').forEach(l => l.classList.toggle('active', l.dataset.lvl === id));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
+  document.getElementById('xpFill').style.width = (id / total * 100) + '%';
+  document.getElementById('xpCount').textContent = 'LVL ' + id + ' / ' + total;
+}
+function buttonLike(el, fn){
+  el.setAttribute('role','button'); el.tabIndex = 0;
+  el.addEventListener('click', fn);
+  el.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fn(e); } });
+}
+
+/* ---------- shared stats helpers ---------- */
+const mean = a => a.reduce((s,x)=>s+x,0)/a.length;
+const median = a => { const s=[...a].sort((x,y)=>x-y), m=s.length>>1; return s.length%2 ? s[m] : (s[m-1]+s[m])/2; };
+const stdev = a => { const m=mean(a); return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1)); }; /* sample, matches Sheets =STDEV */
+function modeOf(a){
+  const counts = {}; a.forEach(v => counts[v] = (counts[v]||0)+1);
+  const max = Math.max(...Object.values(counts));
+  const winners = Object.keys(counts).filter(k => counts[k] === max).map(Number);
+  return {winners, max, tie: winners.length === a.length ? true : false};
+}
+function renderNumRow(id, arr, highlightFn){
+  const box = document.getElementById(id);
+  box.innerHTML = arr.map(v => `<span class="num-chip${highlightFn ? ' ' + (highlightFn(v) || '') : ''}">${v}</span>`).join('');
+}
+
+/* ---------- LEVEL 1 ---------- */
+document.querySelectorAll('#l1Guess .guess').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#l1Guess .guess').forEach(x => x.classList.remove('right','wrong'));
+  b.classList.add(b.dataset.g === 'desc' ? 'right' : 'wrong');
+  document.getElementById('l1Reveal').classList.add('open');
+}));
+
+/* ---------- LEVEL 2: FITNESS TRACKER ---------- */
+(function(){
+  const met = [1,0,1,1,0,1,0,1,1,0]; /* 6 of 10, illustrative pattern */
+  document.getElementById('dayRow').innerHTML = met.map((m,i) =>
+    `<div class="day ${m ? 'met' : 'miss'}" aria-label="Day ${i+1}: goal ${m ? 'met' : 'missed'}"><span class="d-no">DAY ${i+1}</span><span class="d-mark">${m ? '✓' : '✗'}</span></div>`).join('');
+})();
+
+/* ---------- LEVEL 3: MEAN ---------- */
+const examScores = [65,72,75,78,80,82,85,88,90,95];
+(function(){
+  renderNumRow('examNums', examScores);
+  const m = mean(examScores);
+  document.querySelectorAll('#meanGuess .guess').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#meanGuess .guess').forEach(x => x.classList.remove('right','wrong'));
+    b.classList.add(+b.dataset.g === m ? 'right' : 'wrong');
+    document.getElementById('meanRevealText').innerHTML =
+      `(${examScores.join(' + ')}) ÷ 10 = <b>${m}</b>. That's the mean: add every value, divide by the count. Nine of the ten scores sit within about 10 points of it &mdash; it's a solid stand-in for "typical" here, because nothing in this set is extreme.`;
+    document.getElementById('meanReveal').classList.add('open');
+  }));
+})();
+
+/* ---------- LEVEL 4: MEDIAN ---------- */
+(function(){
+  renderNumRow('examNums2', examScores, v => v === 80 || v === 82 ? 'hi' : '');
+  const swapped = examScores.map(v => v === 95 ? 190 : v);
+  document.querySelectorAll('#medianGuess .guess').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#medianGuess .guess').forEach(x => x.classList.remove('right','wrong'));
+    b.classList.add(b.dataset.g === 'no' ? 'right' : 'wrong');
+    const newMean = mean(swapped), newMedian = median(swapped);
+    document.getElementById('medianRevealText').innerHTML =
+      `The mean jumps from <b>${mean(examScores)}</b> to <b>${newMean}</b> &mdash; one single value moved it by ${(newMean-mean(examScores)).toFixed(1)} points. The median stays at <b>${newMedian}</b>, exactly where it was. The median only cares about which value sits in the middle, not how far the extremes wander.`;
+    renderNumRow('examNums3', swapped, v => v === 190 ? 'hi' : (v === 80 || v === 82 ? 'lo' : ''));
+    document.getElementById('medianReveal').classList.add('open');
+  }));
+})();
+
+/* ---------- LEVEL 5: MODE ---------- */
+(function(){
+  const shoes = [7,8,8,8,9,9,10,11];
+  renderNumRow('shoeNums', shoes, v => v === 8 ? 'mode-hit' : '');
+})();
+
+/* ---------- LEVEL 6: STANDARD DEVIATION ---------- */
+function buildStrip(stripId, noteId, roId, axisId, items, axisMax, fmtVal, fmtSd, axisLabel){
+  const strip = document.getElementById(stripId);
+  const vals = items.map(i => i.v);
+  const m = mean(vals), sd = stdev(vals);
+  strip.innerHTML = `<div class="mline" style="left:${m/axisMax*100}%"></div>`;
+  items.forEach((it, i) => {
+    const d = document.createElement('button');
+    d.className = 'dot'; d.title = it.n; d.setAttribute('aria-label', it.n + ' ' + fmtVal(it.v));
+    d.style.left = (it.v/axisMax*100) + '%';
+    d.style.top = (6 + (i % 4) * 12) + 'px';
+    d.addEventListener('click', () => {
+      strip.querySelectorAll('.dot').forEach(x => x.classList.remove('sel'));
+      d.classList.add('sel');
+      document.getElementById(noteId).textContent = `${it.n}: ${fmtVal(it.v)}`;
+    });
+    strip.appendChild(d);
+  });
+  document.getElementById(axisId).textContent = axisLabel;
+  const range = Math.max(...vals) - Math.min(...vals);
+  document.getElementById(roId).innerHTML = `
+    <div class="ro"><span class="ro-l">Average</span><span class="ro-v">${fmtVal(m)}</span></div>
+    <div class="ro"><span class="ro-l">Range</span><span class="ro-v">${fmtSd(range)}</span></div>
+    <div class="ro"><span class="ro-l">Std dev</span><span class="ro-v">${fmtSd(sd)}</span></div>`;
+}
+buildStrip('stripA','noteA','roA','axisAMax',
+  [4,5,5,6,5].map((v,i) => ({n:'Shipment '+(i+1), v})), 10, v => v.toFixed(1)+' days', v => v.toFixed(2)+' days', '10 days');
+buildStrip('stripB','noteB','roB','axisBMax',
+  [1,3,5,7,9].map((v,i) => ({n:'Shipment '+(i+1), v})), 10, v => v.toFixed(1)+' days', v => v.toFixed(2)+' days', '10 days');
+
+/* ---------- LEVEL 7: CALCULATE (coffee) ---------- */
+const sgn = d => d > 0 ? '+' + d : (d < 0 ? '−' + Math.abs(d) : '0');
+(function(){
+  const vals = [248,252,250,251,249,250,252,248,251,249], n = vals.length;
+  const sum = vals.reduce((a,b)=>a+b,0), m = sum / n;
+  const devs = vals.map(v => v - m), sq = devs.map(d => d*d);
+  const sumSq = sq.reduce((a,b)=>a+b,0), variance = sumSq / (n-1), sd = Math.sqrt(variance);
+  document.getElementById('calcBody').innerHTML = vals.map((v,i) =>
+    `<tr><td>Bag ${i+1}</td><td>${v}</td><td class="c" data-step="2"><span class="${devs[i]<0?'neg':devs[i]>0?'pos':''}">${sgn(devs[i])}</span></td><td class="c" data-step="3">${sq[i]}</td></tr>`).join('');
+  document.getElementById('calcFoot').innerHTML =
+    `<tr><td>Total</td><td class="c" data-step="1">${sum}</td><td class="c" data-step="2">${sgn(devs.reduce((a,b)=>a+b,0))}</td><td class="c" data-step="3">${sumSq}</td></tr>`;
+  const notes = [
+    `Ten bags, target 250 g. Press <b>Step 1</b>.`,
+    `<b>Step 1, mean.</b> Add all ten, divide by 10. Exactly on target: judged by the mean alone, this machine is perfect.<span class="fx">${sum} ÷ ${n} = ${m} g</span>`,
+    `<b>Step 2, subtract the mean.</b> Each bag minus 250. Look at the total: <b>0</b>. That always happens, because the overs and unders cancel out. So you can't just average these distances; you'd always get zero.<span class="fx">e.g. 248 − 250 = −2</span>`,
+    `<b>Step 3, square each distance.</b> Now every number is positive, and bags far from target count extra.<span class="fx">(−2)² = 4 · total = ${sumSq}</span>`,
+    `<b>Step 4, average the squares.</b> Divide by count − 1 (more on that below). This is the <b>variance</b>, measured in "grams squared", a unit nobody can picture.<span class="fx">${sumSq} ÷ ${n-1} = ${variance.toFixed(2)}</span>`,
+    `<b>Step 5, square root.</b> Back to plain grams. That's the standard deviation: a typical bag lands about 1.5 g away from 250.<span class="fx">√${variance.toFixed(2)} ≈ ${sd.toFixed(2)} g</span>`
+  ];
+  let step = 0;
+  const btn = document.getElementById('stepBtn'), note = document.getElementById('stepNote');
+  function render(){
+    document.querySelectorAll('#calcTable .c').forEach(c => c.classList.toggle('on', +c.dataset.step <= step));
+    note.innerHTML = notes[step];
+    btn.textContent = step < 5 ? `Step ${step+1} ▶` : 'Done ✓';
+    btn.disabled = step >= 5;
+  }
+  btn.addEventListener('click', () => { if(step < 5){ step++; render(); } });
+  document.getElementById('stepReset').addEventListener('click', () => { step = 0; render(); });
+  render();
+})();
+
+/* ---------- LEVEL 7: APPLY (basketball) ---------- */
+(function(){
+  const pts = [22,18,31,25,19,27,24,30,21,23];
+  const m = mean(pts), sd = stdev(pts), lo = 14, hi = 34, pos = v => (v-lo)/(hi-lo)*100;
+  const strip = document.getElementById('stripC');
+  strip.innerHTML =
+    `<div class="band b2" style="left:${pos(m-2*sd)}%;width:${pos(m+2*sd)-pos(m-2*sd)}%"></div>` +
+    `<div class="band b1" style="left:${pos(m-sd)}%;width:${pos(m+sd)-pos(m-sd)}%"></div>` +
+    `<div class="mline" style="left:${pos(m)}%"></div>`;
+  pts.forEach((v,i) => {
+    const z = (v - m) / sd, az = Math.abs(z);
+    const verdict = az <= 1 ? 'typical' : az <= 2 ? 'noticeable, but normal for this player' : 'unusual, look closer';
+    const d = document.createElement('button');
+    d.className = 'dot'; d.setAttribute('aria-label', `Game ${i+1}: ${v} points`);
+    d.style.left = pos(v) + '%'; d.style.top = (6 + (i % 4) * 12) + 'px';
+    d.addEventListener('click', () => {
+      strip.querySelectorAll('.dot').forEach(x => x.classList.remove('sel')); d.classList.add('sel');
+      document.getElementById('noteC').textContent =
+        `Game ${i+1}: ${v} pts → (${v} − ${m}) ÷ ${sd.toFixed(2)} = ${z >= 0 ? '+' : '−'}${az.toFixed(2)} std devs → ${verdict}`;
+    });
+    strip.appendChild(d);
+  });
+  document.getElementById('axisCMin').textContent = lo + ' pts';
+  document.getElementById('axisCMax').textContent = hi + ' pts';
+  const within = pts.filter(v => Math.abs(v - m) <= sd).length;
+  document.getElementById('roC').innerHTML = `
+    <div class="ro"><span class="ro-l">Mean</span><span class="ro-v">${m} pts</span></div>
+    <div class="ro"><span class="ro-l">Std dev</span><span class="ro-v">${sd.toFixed(2)} pts</span></div>
+    <div class="ro"><span class="ro-l">Within 1 std dev</span><span class="ro-v">${within} of ${pts.length} games</span></div>`;
+  document.getElementById('bballText').innerHTML =
+    `The 31-point game is ${((31-m)/sd).toFixed(2)} std devs above the mean: a strong night, but inside the 2-std-dev band, so not a freak result. No game here goes past 2. ${within} of 10 games sit within one std dev (${(m-sd).toFixed(1)} to ${(m+sd).toFixed(1)} pts). That's the practical use: the std dev becomes a ruler, and "how many std devs away?" works for any dataset, whether it's points, grams or days. (The source page says 1.7, because it divides by 10 instead of 9.)`;
+
+  const target = sd, popSd = Math.sqrt(pts.reduce((s,x)=>s+(x-m)**2,0)/pts.length);
+  const fb = document.getElementById('tryFb'), inp = document.getElementById('tryIn');
+  const near = (x, t) => Math.abs(x - t) < 0.02;
+  function check(){
+    const x = parseFloat(inp.value.replace(',', '.'));
+    if (isNaN(x)) { fb.textContent = 'Type a number first.'; return; }
+    if (near(x, target)) fb.innerHTML = `✅ <b>${target.toFixed(2)}</b>. Matches <code class="f">=STDEV</code>. Now you can explain where that number on the strip came from.`;
+    else if (near(x, popSd)) fb.innerHTML = `✅ Almost: <b>${popSd.toFixed(2)}</b> is the ÷ 10 version (<code class="f">=STDEV.P</code>, the one the source page uses). It's right if these 10 games are all you care about. Divide by 9 and you get ${target.toFixed(2)}.`;
+    else if (near(x, 170/9) || near(x, 17)) fb.innerHTML = `So close: that's the <b>variance</b>. One more step: take the square root.`;
+    else if (near(x, 170)) fb.innerHTML = `That's the sum of the squared distances (step 3). Divide by 9, then take the square root.`;
+    else if (near(x, 0)) fb.innerHTML = `You added up the raw distances, and they always cancel to 0. Square them first (step 3).`;
+    else fb.innerHTML = `Not yet. Check step 1: the mean is 240 ÷ 10 = 24. Then compare your squared distances with the hint.`;
+  }
+  document.getElementById('tryBtn').addEventListener('click', check);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+  document.getElementById('tryHint').addEventListener('click', () => {
+    fb.innerHTML = `Hint: distances from 24 are −2, −6, +7, +1, −5, +3, 0, +6, −3, −1. Their squares add up to <b>170</b>.`;
+  });
+})();
+
+/* ---------- LEVEL 7: use-case toggle ---------- */
+document.getElementById('ucBtn').addEventListener('click', e => {
+  const g = document.getElementById('ucGrid'), open = g.classList.toggle('open');
+  e.currentTarget.setAttribute('aria-expanded', open);
+  e.currentTarget.textContent = open ? '🌍 Where else is std dev used? ▲' : '🌍 Where else is std dev used? ▼';
+});
+
+/* ---------- LEVEL 8: recap match + AI ---------- */
+const matchItems = [
+  {q:"🎯 \"What's the typical exam score?\"", a:'<b>Mean</b> &mdash; the data is well-behaved, no extreme outliers.'},
+  {q:"🏠 \"What's the typical home price in a city with a few mansions?\"", a:'<b>Median</b> &mdash; a handful of huge values would drag the mean way up.'},
+  {q:"🎨 \"What's the most popular color in this poll?\"", a:"<b>Mode</b> &mdash; colors are categories, not numbers, so mean and median don't apply."},
+  {q:'📦 "Can I trust that both warehouses average 5 days?"', a:'<b>Standard deviation</b> &mdash; it tells you how much the individual shipments actually vary.'},
+  {q:'🏀 "Was the 31-point game a freak result?"', a:'<b>Std devs from the mean</b> &mdash; (31 − 24) ÷ 4.35 ≈ 1.6. Strong night, still inside the normal range.'}
+];
+(function(){
+  const g = document.getElementById('matchGrid');
+  matchItems.forEach(t => {
+    const c = document.createElement('div'); c.className = 'qq-card';
+    c.innerHTML = `<div class="qq-q">${t.q}</div><div class="qq-hint">tap to reveal →</div><div class="qq-a">${t.a}</div>`;
+    buttonLike(c, () => c.classList.toggle('revealed'));
+    g.appendChild(c);
+  });
+})();
+const sortItems = [
+  {q:'"The goal was met 60% of the time."', k:'desc', a:'<b>Descriptive.</b> 6 ÷ 10, straight from the log.'},
+  {q:'"This person\'s heart rate never went above 140 bpm in those 10 days."', k:'desc', a:'<b>Descriptive.</b> It\'s the max of the data you have, nothing more.'},
+  {q:'"This person is in poor health."', k:'inf', a:'<b>Needs inferential</b> (and probably more data). That\'s a <i>conclusion</i>. 60% alone can\'t tell you why goals were missed.'},
+  {q:'"Other people with similar age and weight will hit their goal about 60% of the time."', k:'inf', a:'<b>Needs inferential.</b> That\'s a <i>prediction</i> about people you never measured, based on one person. Inferential statistics would also tell you one person is far too small a sample.'},
+  {q:'"Next month, this person will hit their goal on about 18 of 30 days."', k:'inf', a:'<b>Needs inferential.</b> A <i>prediction</i> about days that haven\'t happened yet.'}
+];
+(function(){
+  const list = document.getElementById('sortList');
+  sortItems.forEach(t => {
+    const el = document.createElement('div'); el.className = 'sort-item';
+    el.innerHTML = `<span class="s-q">${t.q}</span><div class="guess-row"><button class="guess" data-g="desc">Descriptive</button><button class="guess" data-g="inf">Needs inferential</button></div><div class="s-a">${t.a}</div>`;
+    el.querySelectorAll('.guess').forEach(b => b.addEventListener('click', () => {
+      el.querySelectorAll('.guess').forEach(x => x.classList.remove('right','wrong'));
+      b.classList.add(b.dataset.g === t.k ? 'right' : 'wrong');
+      el.classList.add('done');
+    }));
+    list.appendChild(el);
+  });
+})();
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const txt = document.getElementById('promptText').textContent;
+  const msg = document.getElementById('copyMsg');
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(
+    () => { msg.textContent = 'Copied ✓'; },
+    () => { msg.textContent = 'Select the text above and copy it by hand.'; });
+});
+document.getElementById('revealSuccessBtn').addEventListener('click', () => {
+  const g = document.getElementById('successGrid'), b = document.getElementById('revealSuccessBtn');
+  const open = g.style.display === 'grid';
+  g.style.display = open ? 'none' : 'grid';
+  b.textContent = open ? '🔑 What carries forward' : '🔑 Got it ✓';
+});
+</script>
+
+</body>
+</html>

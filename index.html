@@ -58,6 +58,7 @@
   .session-card[data-session="s4"]{--sc:var(--yellow);}
   .session-card[data-session="s5"]{--sc:var(--blue);}
   .session-card[data-session="s6"]{--sc:var(--pink);}
+  .session-card[data-session="s7"]{--sc:var(--lime);}
   .sc-badge{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
   .sc-badge b{color:var(--ink);}
   .session-card h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;margin:0 0 10px;line-height:1.25;}
@@ -159,6 +160,12 @@
         <p class="sc-desc">Practice the Echo Rule, repeating what the other person said before you answer, then put it to work in a debate on whether free will is real.</p>
       </div>
 
+      <div class="session-card" data-session="s7" data-open="s7" tabindex="0" role="button">
+        <div class="sc-badge">Session 07 · <b>8 levels</b></div>
+        <h2>Two Kinds of Statistics</h2>
+        <p class="sc-desc">Descriptive vs. inferential statistics, then mean, median, mode, and standard deviation with real datasets to calculate and apply.</p>
+      </div>
+
     </div>
   </div>
 
@@ -204,7 +211,7 @@
     </div>
   </div>
 
-  <div class="site-footer">6 sessions live here — more will be added to this page as the course continues.</div>
+  <div class="site-footer">7 sessions live here — more will be added to this page as the course continues.</div>
 </div>
 
 <div id="viewer">
@@ -222,7 +229,8 @@ const SESSION_FILES = {
   s3: 'slides/session-03-formula-detective.html',
   s4: 'slides/session-04-data-visualization.html',
   s5: 'slides/session-05-data-visualization-intro.html',
-  s6: 'slides/session-06-debate-free-will.html'
+  s6: 'slides/session-06-debate-free-will.html',
+  s7: 'slides/session-07-statistics-basics.html'
 };
 
 const SESSION_META = {
@@ -231,7 +239,8 @@ const SESSION_META = {
   s3: 'Session 03 — Formula Detective',
   s4: 'Session 04 — Seeing the Data',
   s5: 'Session 05 — Numbers Into Pictures',
-  s6: 'Session 06 — Listen First, Then Debate'
+  s6: 'Session 06 — Listen First, Then Debate',
+  s7: 'Session 07 — Two Kinds of Statistics'
 };
 
 const landing = document.getElementById('landing');
