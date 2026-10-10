@@ -59,6 +59,7 @@
   .session-card[data-session="s5"]{--sc:var(--blue);}
   .session-card[data-session="s6"]{--sc:var(--pink);}
   .session-card[data-session="s7"]{--sc:var(--lime);}
+  .session-card[data-session="s8"]{--sc:var(--yellow);}
   .sc-badge{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
   .sc-badge b{color:var(--ink);}
   .session-card h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;margin:0 0 10px;line-height:1.25;}
@@ -166,6 +167,12 @@
         <p class="sc-desc">Descriptive vs. inferential statistics, then mean, median, mode, and standard deviation with real datasets to calculate and apply.</p>
       </div>
 
+      <div class="session-card" data-session="s8" data-open="s8" tabindex="0" role="button">
+        <div class="sc-badge">Session 08 · <b>6 levels</b></div>
+        <h2>From Sheet to Database</h2>
+        <p class="sc-desc">Grow a store ledger in a spreadsheet until it breaks, then rebuild it as related tables and query it with SQL.</p>
+      </div>
+
     </div>
   </div>
 
@@ -215,7 +222,7 @@
     </div>
   </div>
 
-  <div class="site-footer">7 sessions live here — more will be added to this page as the course continues.</div>
+  <div class="site-footer">8 sessions live here — more will be added to this page as the course continues.</div>
 </div>
 
 <div id="viewer">
@@ -234,7 +241,8 @@ const SESSION_FILES = {
   s4: 'slides/session-04-data-visualization.html',
   s5: 'slides/session-05-data-visualization-intro.html',
   s6: 'slides/session-06-debate-free-will.html',
-  s7: 'slides/session-07-statistics-basics.html'
+  s7: 'slides/session-07-statistics-basics.html',
+  s8: 'slides/session-08-relational-databases.html'
 };
 
 const SESSION_META = {
@@ -244,7 +252,8 @@ const SESSION_META = {
   s4: 'Session 04 — Seeing the Data',
   s5: 'Session 05 — Numbers Into Pictures',
   s6: 'Session 06 — Listen First, Then Debate',
-  s7: 'Session 07 — Two Kinds of Statistics'
+  s7: 'Session 07 — Two Kinds of Statistics',
+  s8: 'Session 08 — From Sheet to Database'
 };
 
 const landing = document.getElementById('landing');
