@@ -343,7 +343,7 @@
           <ul style="margin-top:6px;">
             <li>Joe "<b>Goal</b>dentooth" Smith, $1.25, and Joe "Goldentooth" Smith, $23.84. Joe really spent <b>$25.09</b>.</li>
             <li>Clara "<b>Pah</b>andle" Briggs, $0.20, and Clara "Panhandle" Briggs, $4.80. Clara really spent <b>$5.00</b>.</li>
-            <li>The third typo, <code class="f">Bottle of whisky</code>, is hiding in the article column. It bites in Task 3.</li>
+            <li>The third typo, <code class="f">Bottle of whisky</code>, is hiding in the product column. It bites in Task 3.</li>
           </ul>
           <p style="margin-top:8px;"><b>Inconsistency</b> = the same thing written in different ways. Every typo becomes a new "customer", and your numbers are wrong without any error.</p></div></div>
       </div>
@@ -644,7 +644,7 @@
       <div class="qq-grid" id="matchGrid"></div>
 
       <div class="section-tag">Try it with AI</div>
-      <div class="prompt"><span class="p-tag">Paste-ready prompt</span><span id="promptText">Here is a flat ledger with columns customer, date, article, cost:
+      <div class="prompt"><span class="p-tag">Paste-ready prompt</span><span id="promptText">Here is a flat ledger with columns customer, date, product, cost:
 Joe "Goldentooth" Smith, 1897-12-23, Cat gut banjo strings, 0.15
 Clara "Panhandle" Briggs, 1897-12-28, Bottle of whiskey, 0.75
 Joe "Goldentooth" Smith, 1897-12-31, Bottle of whiskey, 0.75
@@ -711,7 +711,7 @@ const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const money = v => '$' + v.toFixed(2);
 function renderFlat(id, rows, opts = {}){
   const t = document.getElementById(id);
-  const hdr = opts.addr ? ['customer','address','date','article','cost'] : ['customer','date','article','cost'];
+  const hdr = opts.addr ? ['customer','address','date','product','cost'] : ['customer','date','product','cost'];
   let html = '<thead><tr>' + hdr.map(h => `<th class="${h==='cost'?'num':''}">${h}</th>`).join('') + '</tr></thead><tbody>';
   rows.forEach((r, i) => {
     const c = (opts.cls && opts.cls[i]) || {};
@@ -727,7 +727,7 @@ renderFlat('ledgerReview', reviewRows);
 /* ---------- LEVEL 1: same ledger as raw CSV text, commas and quotes highlighted ---------- */
 (function(){
   const q = v => /[",]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
-  const lines = ['customer,date,article,cost'].concat(reviewRows.map(r => [r[0], r[1], r[2], r[3].toFixed(2)].map(q).join(',')));
+  const lines = ['customer,date,product,cost'].concat(reviewRows.map(r => [r[0], r[1], r[2], r[3].toFixed(2)].map(q).join(',')));
   const paint = l => esc(l).replace(/"/g, '<b class="k-quote">"</b>').replace(/,/g, '<b class="k-comma">,</b>');
   document.getElementById('copyLedger').addEventListener('click', e => {
     const b = e.target, old = b.textContent;
@@ -766,7 +766,7 @@ function revealGrid(gridId, items){
     [CB,'1898-02-27','Bottle of whisky',0.75], [JG,'1898-02-28','Sack of flour',0.40]
   ];
   document.getElementById('newSales').innerHTML =
-    '<thead><tr><th>A · customer</th><th>B · date</th><th>C · article</th><th class="num">D · cost</th></tr></thead><tbody>' +
+    '<thead><tr><th>A · customer</th><th>B · date</th><th>C · product</th><th class="num">D · cost</th></tr></thead><tbody>' +
     sales.map(r => `<tr><td>${esc(r[0])}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3].toFixed(2)}</td></tr>`).join('') + '</tbody>';
   document.getElementById('copyNewSales').addEventListener('click', e => {
     const b = e.target, old = b.textContent;
