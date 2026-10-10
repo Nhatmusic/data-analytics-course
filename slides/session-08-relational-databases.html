@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 08 | From Sheet to Database</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* palette: bg #fafaf6 · panel #ffffff · ink #14141a · lime #a4d925 · pink #ff3d94 · blue #2f7dff · yellow #ffc328
+     type: Space Grotesk (display) · Inter (body) · JetBrains Mono (HUD / labels / data / SQL)
+     same field-notebook system as Sessions 01, 02, 05, 06 and 07.
+     Dataset this session: the NetAcad "general store ledger" (gold miners, 1897-98). Students save the 6-row ledger
+     as a CSV in Level 1 and grow it in Level 2. Clara Briggs is an invented
+     second customer added so the patterns show up. Hands-on runs in SQLite Online (browser, no install). */
+  :root{
+    --bg:#fafaf6; --panel:#ffffff; --panel2:#f2f2ea; --line:#1c1c22; --ink:#14141a; --muted:#6c6c76;
+    --lime:#a4d925; --pink:#ff3d94; --blue:#2f7dff; --yellow:#ffc328; --lime-deep:#5c7a17; --red:#e0405a; --green:#2f9e6f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+  #hello{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;padding:24px;}
+  #hello .badge{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);padding:6px 14px;border-radius:20px;}
+  #hello h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(32px,7vw,58px);margin:0;line-height:1.14;}
+  #hello h1 span{color:var(--pink);}
+  #hello p.sub{font-size:16px;color:var(--muted);max-width:54ch;margin:0;}
+  .start-btn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--ink);background:var(--lime);border:2px solid var(--ink);padding:16px 36px;border-radius:40px;cursor:pointer;box-shadow:0 6px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;}
+  .start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink);}
+  .start-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+  .start-btn.small{font-size:15px;padding:11px 22px;box-shadow:0 5px 0 var(--ink);}
+  .start-btn.small:active{box-shadow:0 1px 0 var(--ink);}
+  .start-btn.alt{background:var(--yellow);}
+  .start-btn.blue{background:var(--blue);color:#fff;}
+
+  #app{display:none;max-width:1040px;margin:0 auto;padding:28px 22px 70px;}
+  .hud-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .hud-top .tag{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .xp-bar{flex:1;height:8px;background:var(--panel2);border-radius:6px;margin:0 16px;overflow:hidden;}
+  .xp-fill{height:100%;width:16.7%;background:linear-gradient(90deg,var(--blue),var(--lime));transition:width .3s ease;}
+  .xp-count{font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap;}
+
+  .levels{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;}
+  .lvl{flex:1;min-width:110px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12.5px;text-align:center;padding:11px 6px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;transition:transform .12s ease;}
+  .lvl small{display:block;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:10px;letter-spacing:.08em;margin-bottom:3px;opacity:.8;}
+  .lvl:hover{transform:translateY(-2px);}
+  .lvl.active{color:var(--ink);}
+  .lvl[data-lvl="1"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl[data-lvl="2"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl[data-lvl="3"].active{background:var(--yellow);border-color:var(--yellow);}
+  .lvl[data-lvl="4"].active{background:var(--blue);border-color:var(--blue);}
+  .lvl[data-lvl="5"].active{background:var(--lime);border-color:var(--lime);}
+  .lvl[data-lvl="6"].active{background:var(--pink);border-color:var(--pink);}
+  .lvl:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+
+  .stage{background:var(--panel);border:2px solid var(--line);border-radius:20px;padding:30px 26px 34px;}
+  .page{display:none;}
+  .page.active{display:block;animation:pop .22s ease;}
+  @keyframes pop{from{opacity:0;transform:scale(.98);}to{opacity:1;transform:scale(1);}}
+  .page h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(22px,4vw,32px);margin:0 0 8px;}
+  .page .lede{font-size:15.5px;color:var(--muted);max-width:66ch;margin:0 0 18px;}
+  .time-tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;background:var(--ink);color:#fff;border-radius:8px;padding:2px 8px;margin-left:8px;vertical-align:middle;letter-spacing:.04em;}
+  .section-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;}
+
+  .box{margin-top:18px;border-radius:14px;padding:15px 18px;border:1px solid var(--line);}
+  .box .dl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+  .box p{margin:0;font-size:14.5px;font-weight:500;line-height:1.55;}
+  .box ul{margin:0;padding-left:20px;font-size:14.5px;font-weight:500;line-height:1.6;}
+  .box.hook{background:rgba(47,125,255,0.08);border-color:var(--blue);} .box.hook .dl{color:var(--blue);}
+  .box.discuss{background:rgba(164,217,37,0.14);border-color:var(--lime);} .box.discuss .dl{color:var(--lime-deep);}
+  .box.gotcha{background:rgba(224,64,90,0.08);border-color:var(--red);} .box.gotcha .dl{color:var(--red);}
+  .box.sheets{background:rgba(47,158,111,0.10);border-color:var(--green);} .box.sheets .dl{color:var(--green);}
+  .box.rule{background:rgba(255,61,148,0.07);border-color:var(--pink);} .box.rule .dl{color:var(--pink);}
+  code.f{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:var(--ink);color:#e8f7d0;border-radius:6px;padding:2px 7px;}
+
+  /* why / what / how */
+  .wwh{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:6px 0 4px;}
+  .wwh-card{border:2px solid var(--line);border-radius:16px;padding:16px 18px;background:var(--panel);}
+  .wwh-card .w-ico{font-size:26px;display:block;margin-bottom:4px;}
+  .wwh-card .w-tag{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;}
+  .wwh-card .w-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;display:block;margin:2px 0 6px;}
+  .wwh-card .w-desc{font-size:13.5px;line-height:1.55;}
+  .wwh-card:nth-child(1){border-top:8px solid var(--pink);}
+  .wwh-card:nth-child(2){border-top:8px solid var(--blue);}
+  .wwh-card:nth-child(3){border-top:8px solid var(--lime);}
+
+  /* roadmap */
+  .road-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:6px;}
+  .road-card{display:flex;flex-direction:column;gap:3px;border:2px solid var(--line);border-top:6px solid var(--rc,var(--ink));border-radius:14px;padding:13px 14px;background:var(--panel);}
+  .road-card .rc-lvl{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--muted);}
+  .road-card .rc-ico{font-size:22px;}
+  .road-card .rc-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;line-height:1.25;}
+  .road-card .rc-desc{font-size:12px;color:var(--muted);line-height:1.4;}
+
+  /* guess */
+  .guess-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 6px;}
+  .guess{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;min-width:50px;padding:10px 16px;border:2px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer;transition:transform .1s ease;}
+  .guess:hover{transform:translateY(-2px);}
+  .guess:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+  .guess.right{background:var(--lime);} .guess.wrong{background:rgba(224,64,90,0.18);border-color:var(--red);}
+  .reveal-body{display:none;margin-top:14px;} .reveal-body.open{display:block;}
+
+  /* data tables */
+  .tbl-wrap{overflow-x:auto;margin-top:6px;}
+  table.dt{border-collapse:separate;border-spacing:0;width:100%;min-width:520px;font-family:'JetBrains Mono',monospace;font-size:13px;border:2px solid var(--line);border-radius:14px;overflow:hidden;}
+  table.dt th{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:9px 12px;background:var(--panel2);border-bottom:2px solid var(--line);}
+  table.dt td{padding:7px 12px;border-bottom:1px solid #e4e4dc;font-weight:600;transition:background .2s ease;}
+  table.dt tr:last-child td{border-bottom:none;}
+  table.dt td.num{text-align:right;} table.dt th.num{text-align:right;}
+  table.dt td.flag{background:rgba(255,61,148,0.20);}
+  table.dt td.miss{background:rgba(224,64,90,0.16);color:var(--red);}
+  table.dt td.ok{background:rgba(164,217,37,0.30);}
+  table.dt td.blank{color:var(--muted);font-style:italic;background:rgba(255,195,40,0.18);}
+  table.dt td.key{color:var(--blue);}
+  .tbl-cap{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;margin:14px 0 4px;}
+  .tbl-cap small{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:10.5px;color:var(--muted);margin-left:6px;}
+  .btn-row{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 4px;}
+  .readout{font-size:14.5px;font-weight:600;line-height:1.55;min-height:24px;margin:12px 0 0;padding:12px 16px;border-left:4px solid var(--pink);background:rgba(255,61,148,0.06);border-radius:0 12px 12px 0;}
+  .readout:empty{display:none;}
+
+  /* pros/cons */
+  .pc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:6px;}
+  .pc{border:2px solid var(--line);border-radius:16px;padding:14px 18px;}
+  .pc.pro{border-top:8px solid var(--lime-deep);} .pc.con{border-top:8px solid var(--red);}
+  .pc .pc-t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;display:block;margin-bottom:6px;}
+  .pc ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.6;}
+
+  /* problem cards L3 */
+  .prob-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:6px;}
+  .prob{border:2px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--panel2);}
+  .prob .p-n{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--muted);}
+  .prob .p-t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;display:block;margin:2px 0 4px;}
+  .prob .p-d{font-size:12.5px;color:var(--muted);line-height:1.45;}
+
+  /* case board (Level 2) */
+  .case-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:14px;margin-top:16px;}
+  @media (max-width:520px){ .case-grid{grid-template-columns:1fr;} }
+  .case{border:2px solid var(--line);border-radius:16px;padding:14px 16px 16px;background:var(--panel);}
+  .case-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .case-lvl{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+  .case-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;line-height:1.35;margin-top:8px;}
+  .case-hint{display:none;font-size:13px;margin-top:10px;padding:9px 12px;border-radius:10px;background:rgba(255,195,40,0.18);line-height:1.5;}
+  .case.show-hint .case-hint{display:block;}
+  .case-ans{display:none;}
+  .case.show-ans .case-ans{display:block;}
+  .case.show-ans{border-color:var(--lime-deep);}
+  .case-why{display:inline-block;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;background:var(--pink);color:#fff;border-radius:8px;padding:3px 9px;}
+  .case .readout{font-size:13px;}
+  /* SVG diagrams */
+  .diagram{width:100%;height:auto;display:block;margin:8px 0 4px;}
+  .diagram .tb{fill:var(--panel);stroke:var(--line);stroke-width:2;}
+  .diagram .th{fill:var(--panel2);stroke:var(--line);stroke-width:2;}
+  .diagram .t-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;fill:var(--ink);}
+  .diagram .t-col{font-family:'JetBrains Mono',monospace;font-size:12.5px;fill:var(--ink);}
+  .diagram .t-pk{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;fill:var(--lime-deep);}
+  .diagram .t-fk{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;fill:var(--blue);}
+  .diagram .t-note{font-family:'Inter',sans-serif;font-size:12px;fill:var(--muted);}
+  .diagram .link{stroke:var(--blue);stroke-width:2.5;fill:none;}
+  .diagram .ah{fill:var(--blue);}
+  .key-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+  .key-legend span{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:8px;padding:3px 9px;background:var(--panel2);border:1px solid var(--line);}
+
+  /* flow */
+  .mini-flow{display:flex;align-items:stretch;flex-wrap:wrap;margin:12px 0 18px;}
+  .mf-step{flex:1;min-width:140px;background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:11px 12px;text-align:center;}
+  .mf-step .mf-no{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--muted);display:block;}
+  .mf-step .mf-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;display:block;}
+  .mf-step .mf-sub{font-size:12px;color:var(--muted);display:block;margin-top:3px;}
+  .mf-step.hot{background:rgba(164,217,37,0.2);border-color:var(--lime-deep);}
+  .mf-step.cool{background:rgba(47,125,255,0.10);border-color:var(--blue);}
+  .mf-arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px;padding:0 4px;flex:0 0 auto;}
+  @media (max-width:640px){ .mini-flow{flex-direction:column;} .mf-arrow{transform:rotate(90deg);padding:2px 0;} }
+
+  /* SQL code blocks */
+  .mission{border:2px solid var(--line);border-radius:16px;padding:14px 16px 16px;margin-top:14px;background:var(--panel);}
+  .mission .m-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+  .mission .m-t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;}
+  .mission .m-n{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;background:var(--yellow);border:1px solid var(--line);border-radius:8px;padding:2px 8px;margin-right:8px;}
+  .mission p{font-size:13.5px;margin:8px 0 0;line-height:1.55;}
+  pre.sql{font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6;background:var(--ink);color:#e8f7d0;border-radius:12px;padding:14px 16px;margin:0;overflow-x:auto;white-space:pre;}
+  pre.sql .kw{color:var(--lime);font-weight:700;} pre.sql .cm{color:#8f8f9a;}
+  pre.raw-csv{font-size:14px;line-height:1.8;margin-top:6px;}
+  pre.raw-csv .ln{display:inline-block;width:2.2em;color:#8f8f9a;user-select:none;}
+  .k-comma{color:var(--pink);font-weight:700;} .k-quote{color:var(--yellow);font-weight:700;}
+  .key-legend .k-comma, .key-legend .k-quote{background:var(--ink);border-radius:4px;padding:0 5px;}
+  .copy{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;background:var(--panel2);border:2px solid var(--line);border-radius:10px;padding:5px 10px;cursor:pointer;}
+  .copy:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+  .expect{display:none;margin-top:10px;} .expect.open{display:block;}
+  .task-steps{margin:10px 0 0;padding-left:20px;font-size:14px;line-height:1.65;}
+  .peek{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--blue);background:none;border:none;padding:0;margin-top:10px;cursor:pointer;text-decoration:underline;}
+
+  /* client app compare */
+  .app-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:6px;}
+  .app-card{border:2px solid var(--line);border-radius:16px;padding:14px 18px;}
+  .app-card .a-t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;display:block;}
+  .app-card .a-s{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);display:block;margin-bottom:8px;}
+  .app-card ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.6;}
+  .app-card.my{border-top:8px solid var(--blue);} .app-card.lite{border-top:8px solid var(--lime-deep);}
+
+  /* prompt */
+  .prompt{font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;background:var(--ink);color:#e8f7d0;border-radius:14px;padding:16px 18px;border:2px solid var(--line);white-space:pre-wrap;}
+  .prompt .p-tag{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--lime);margin-bottom:6px;}
+
+  /* recap cards */
+  .qq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+  .qq-card{border:2px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;transition:background .12s ease;}
+  .qq-card .qq-q{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;margin-bottom:4px;}
+  .qq-card .qq-hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);}
+  .qq-card .qq-a{display:none;font-size:13.5px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);line-height:1.6;}
+  .qq-card.revealed{background:var(--panel2);border-color:var(--lime);}
+  .qq-card.revealed .qq-a{display:block;} .qq-card.revealed .qq-hint{display:none;}
+  .qq-card:focus-visible{outline:3px solid var(--yellow);outline-offset:2px;}
+  .recap-statement{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(19px,3.4vw,26px);line-height:1.35;margin:6px 0 22px;}
+  .hl-pink{color:var(--pink);} .hl-blue{color:var(--blue);} .hl-green{color:var(--lime-deep);}
+  .b-chip{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;background:var(--panel2);border-radius:8px;padding:6px 10px;display:inline-block;}
+  .next-tag{margin-top:20px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;}
+  a.src-link{color:var(--blue);font-weight:700;}
+
+  @media (max-width:560px){ .lvl{min-width:100%;} .stage{padding:22px 16px 26px;} }
+</style>
+</head>
+<body>
+
+<div id="hello">
+  <div class="badge">Session 08</div>
+  <h1>Your spreadsheet has a <span>breaking point</span>.<br>Today you find it.</h1>
+  <p class="sub">A general store in 1897, one customer who loses a gold tooth, and the reason almost every company stores its data in a relational database instead of one big sheet.</p>
+  <button class="start-btn" id="startBtn">Let's go ▶</button>
+</div>
+
+<div id="app">
+
+  <div class="hud-top">
+    <span class="tag">Progress</span>
+    <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+    <span class="xp-count" id="xpCount">LVL 1 / 6</span>
+  </div>
+
+  <div class="levels">
+    <div class="lvl active" data-lvl="1"><small>L1 · 9 MIN</small>Flat File 📄</div>
+    <div class="lvl" data-lvl="2"><small>L2 · 12 MIN</small>Investigate 🕵️</div>
+    <div class="lvl" data-lvl="3"><small>L3 · 10 MIN</small>Relational 🔗</div>
+    <div class="lvl" data-lvl="4"><small>L4 · 8 MIN</small>SQL + Apps 🖥️</div>
+    <div class="lvl" data-lvl="5"><small>L5 · 15 MIN</small>Hands-on ⛏️</div>
+    <div class="lvl" data-lvl="6"><small>L6 · 4 MIN</small>Recap + AI 🤖</div>
+  </div>
+
+  <div class="stage">
+
+    <!-- LEVEL 1 -->
+    <div class="page active" id="page-1">
+      <h2>Quick review: the flat file 📄<span class="time-tag">9 MIN</span></h2>
+      <p class="lede">A <b>flat file</b> is one table, one file: every row is a full record. A Google Sheet, an Excel tab, or a CSV are all flat files.</p>
+
+      <div class="tbl-cap">ledger.csv, opened as plain text <small>NetAcad example · Clara is invented so the pattern shows</small></div>
+      <pre class="sql raw-csv" id="ledgerRaw"></pre>
+      <div class="key-legend">
+        <span>line 1 = header (column names)</span>
+        <span><b class="k-comma">,</b> = delimiter: a column ends here</span>
+        <span><b class="k-quote">"</b> = wraps a value that has quotes or commas inside</span>
+      </div>
+      <div class="box sheets">
+        <div class="dl">What you're looking at</div>
+        <p>This is a <b>CSV</b> (comma-separated values): a flat file saved as plain text. There are no columns in it. The app makes columns by counting commas. Joe's name has quote marks in it, so the whole name is wrapped in quotes and each inner quote is doubled: <code class="f">"Joe ""Goldentooth"" Smith"</code>.</p>
+      </div>
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">TRY IT</span>Make your own CSV, then open it in Sheets</span><button class="copy" id="copyLedger">📋 Copy the raw text</button></div>
+        <div class="mini-flow" style="margin:6px 0 4px;">
+          <div class="mf-step"><span class="mf-no">1 · COPY</span><span class="mf-title">Copy the text</span><span class="mf-sub">button above</span></div>
+          <div class="mf-arrow">→</div>
+          <div class="mf-step"><span class="mf-no">2 · PASTE</span><span class="mf-title">Plain-text editor</span><span class="mf-sub">Windows: Notepad<br>Mac: TextEdit → Format → Make Plain Text</span></div>
+          <div class="mf-arrow">→</div>
+          <div class="mf-step"><span class="mf-no">3 · SAVE</span><span class="mf-title">Name it ledger.csv</span><span class="mf-sub">Notepad: "Save as type" → All files<br>Mac: if asked, choose "Use .csv"</span></div>
+          <div class="mf-arrow">→</div>
+          <div class="mf-step hot"><span class="mf-no">4 · LOAD</span><span class="mf-title">Open in Sheets</span><span class="mf-sub">File → Import → Upload<br>→ Insert new sheet</span></div>
+        </div>
+        <p>Before you load it, guess: how many columns will you get? Then look at what happened to all those <b class="k-quote" style="background:var(--ink);border-radius:4px;padding:0 5px;">"</b> marks.</p>
+        <button class="peek" data-peek="eLedger">Check your sheet</button>
+        <div class="expect" id="eLedger">
+          <div class="box discuss"><div class="dl">You should see</div><p><b>4 columns, 7 rows.</b> The quote marks around names are gone, and the doubled ones became single: Sheets read them as instructions, not as text. If your file saved as <code class="f">ledger.csv.txt</code> by accident, Sheets will still import it.</p></div>
+          <div class="btn-row"><button class="copy" id="showGrid">📊 Compare with the expected table</button></div>
+          <div class="tbl-wrap" id="gridWrap" style="display:none;">
+            <table class="dt" id="ledgerReview"></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="box hook">
+        <div class="dl">Guess first</div>
+        <p>How many rows would you need to read to find every purchase Joe made?</p>
+      </div>
+      <div class="guess-row" id="l2Guess">
+        <button class="guess" data-g="1">1</button>
+        <button class="guess" data-g="4">4</button>
+        <button class="guess" data-g="6">All 6</button>
+      </div>
+      <div class="reveal-body" id="l2Reveal">
+        <div class="box discuss">
+          <div class="dl">Answer</div>
+          <p><b>All 6.</b> A flat file has no index of "who is who". You (or a filter) scan every row and compare names. Fine for 6 rows. The NYC collisions file you're working on is thousands of times bigger.</p>
+        </div>
+      </div>
+
+      <div class="section-tag">Fair is fair: flat files are good at a lot</div>
+      <div class="pc-grid">
+        <div class="pc pro"><span class="pc-t">✅ Strengths</span>
+          <ul><li>Everything is in one file</li><li>Open it, read it, done. No setup</li><li>Great for small, one-off lists and quick analysis</li></ul></div>
+        <div class="pc con"><span class="pc-t">🕵️ Weak spots</span>
+          <ul><li>You'll find these yourself in the next level.</li></ul></div>
+      </div>
+      <div class="box sheets">
+        <div class="dl">Reach for a flat file when</div>
+        <p>The data is small, one person edits it, and it's mostly one kind of thing. Your homework analysis sheets are a perfect fit.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 2 -->
+    <div class="page" id="page-2">
+      <h2>Push your ledger until it breaks 🕵️<span class="time-tag">12 MIN</span></h2>
+      <p class="lede">Keep working in the sheet you made on Level 1. You're the store clerk now. Three ordinary days at the store, three tasks.</p>
+
+      <div class="mini-flow">
+        <div class="mf-step"><span class="mf-no">TASK 1 · 5 MIN</span><span class="mf-title">Add 10 sales</span><span class="mf-sub">→ inconsistency</span></div>
+        <div class="mf-arrow">→</div>
+        <div class="mf-step"><span class="mf-no">TASK 2 · 3 MIN</span><span class="mf-title">Add contact columns</span><span class="mf-sub">→ redundancy</span></div>
+        <div class="mf-arrow">→</div>
+        <div class="mf-step"><span class="mf-no">TASK 3 · 4 MIN</span><span class="mf-title">Rename things</span><span class="mf-sub">→ reliability</span></div>
+      </div>
+
+      <!-- TASK 1 -->
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">TASK 1</span>A busy February: add 10 sales</span><button class="copy" id="copyNewSales">📋 Copy the 10 rows</button></div>
+        <div class="tbl-wrap"><table class="dt" id="newSales"></table></div>
+        <ul class="task-steps">
+          <li>A tired clerk wrote these 10 sales. Click cell <b>A8</b> and paste.</li>
+          <li>The clerk made <b>3 typos</b>. Can you spot them before the pivot table does?</li>
+        </ul>
+        <div class="box hook"><div class="dl">Then check</div><p>Insert → Pivot table. Rows = customer, Values = cost (SUM). How many customers does the store have? How much did Joe spend?</p></div>
+        <button class="peek" data-peek="eT1">Reveal</button>
+        <div class="expect" id="eT1"><div class="box discuss"><div class="dl">Data inconsistency</div>
+          <p>The store has <b>2</b> customers, but your pivot shows <b>4</b>:</p>
+          <ul style="margin-top:6px;">
+            <li>Joe "<b>Goal</b>dentooth" Smith, $1.25, and Joe "Goldentooth" Smith, $23.84. Joe really spent <b>$25.09</b>.</li>
+            <li>Clara "<b>Pah</b>andle" Briggs, $0.20, and Clara "Panhandle" Briggs, $4.80. Clara really spent <b>$5.00</b>.</li>
+            <li>The third typo, <code class="f">Bottle of whisky</code>, is hiding in the article column. It bites in Task 3.</li>
+          </ul>
+          <p style="margin-top:8px;"><b>Inconsistency</b> = the same thing written in different ways. Every typo becomes a new "customer", and your numbers are wrong without any error.</p></div></div>
+      </div>
+
+      <!-- TASK 2 -->
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">TASK 2</span>The owner wants contact details</span></div>
+        <div class="tbl-wrap"><table class="dt" id="contacts"></table></div>
+        <ul class="task-steps">
+          <li>Add 3 columns after cost: <b>address</b>, <b>phone</b>, <b>email</b>. (Email in 1898? Just go with it.)</li>
+          <li>Fill them in on <b>every</b> row, all 16.</li>
+        </ul>
+        <div class="box hook"><div class="dl">Then count</div><p>How many cells did you just fill in? How many different facts do they hold?</p></div>
+        <button class="peek" data-peek="eT2">Reveal</button>
+        <div class="expect" id="eT2"><div class="box discuss"><div class="dl">Data redundancy</div>
+          <p><b>48 cells</b> (16 rows × 3) to store <b>6 facts</b> (2 customers × 3 details). The other 42 are copies. Now scale it: 200 customers shopping once a week for a year is 10,400 rows and <b>31,200</b> cells to store 600 facts. And every copy you paste carries your typos along with it. <b>Redundancy</b> = the same fact stored over and over.</p></div></div>
+      </div>
+
+      <!-- TASK 3 -->
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">TASK 3</span>Two things get renamed</span></div>
+        <ul class="task-steps">
+          <li>Joe lost his gold tooth in a fight. He's now <code class="f">Joe "Missingtooth" Smith</code>. Update <b>every</b> one of his sales.</li>
+          <li>The supplier renamed a product: <code class="f">Bottle of whiskey</code> is now <code class="f">Whiskey (1 bottle)</code>. Update every whiskey sale.</li>
+          <li>Use any tool you like. Edit → Find and replace is allowed.</li>
+        </ul>
+        <div class="box hook"><div class="dl">Then prove it</div><p>Refresh your pivot. Is Joe one customer with 10 sales? Does <code class="f">=COUNTIF(C:C, "Whiskey (1 bottle)")</code> give 5? Now read Joe's email column.</p></div>
+        <button class="peek" data-peek="eT3">Reveal</button>
+        <div class="expect" id="eT3"><div class="box discuss"><div class="dl">Data reliability</div>
+          <p>Find and replace only changes text that matches exactly, so:</p>
+          <ul style="margin-top:6px;">
+            <li>The <code class="f">Goaldentooth</code> row doesn't match "Goldentooth", so it's <b>still separate</b> from the real Joe.</li>
+            <li>COUNTIF gives <b>4</b>, not 5. The "whisky" row was never renamed.</li>
+            <li>Joe's email is now <code class="f">joe.missingtooth@...</code>. Find and replace changed a cell you never meant to touch, because "Goldentooth" was in it too.</li>
+          </ul>
+          <p style="margin-top:8px;">You changed two facts and had to trust that you found every copy. <b>Reliability</b> = can you trust the data after it changes? With copies everywhere, you can't without checking every row.</p></div></div>
+      </div>
+
+      <div class="section-tag">One more question</div>
+      <div class="qq-grid" id="identityGrid"></div>
+
+      <div class="section-tag">What you found</div>
+      <div class="prob-grid">
+        <div class="prob"><span class="p-n">TASK 1</span><span class="p-t">Inconsistency</span><span class="p-d">One thing, many spellings.</span></div>
+        <div class="prob"><span class="p-n">TASK 2</span><span class="p-t">Redundancy</span><span class="p-d">One fact, many copies.</span></div>
+        <div class="prob"><span class="p-n">TASK 3</span><span class="p-t">Reliability</span><span class="p-d">Change a fact and you can't be sure every copy changed.</span></div>
+      </div>
+      <div class="box rule">
+        <div class="dl">The real argument for a database</div>
+        <p>All three problems come from one habit: writing the same fact (Joe's name, his address, a product name) on every row. Find and replace can <b>repair</b> some of it after you notice. A relational database <b>prevents</b> it: each fact is stored once, in its own table, and every sale points to it by ID. Next level, you'll see how.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 3 -->
+    <div class="page" id="page-3">
+      <h2>The fix: a relational database 🔗<span class="time-tag">10 MIN</span></h2>
+      <p class="lede">A <b>relational database</b> splits the ledger into tables that each describe one kind of thing, then links them with ID numbers.</p>
+
+      <svg class="diagram" viewBox="0 0 760 300" role="img" aria-label="Three linked tables: customers and products on the left, sales on the right. sales.customer_id points to customers.customer_id and sales.product_id points to products.product_id.">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <!-- customers -->
+        <rect class="th" x="20" y="14" width="250" height="34" rx="8"/>
+        <text class="t-title" x="34" y="37">👤 customers</text>
+        <rect class="tb" x="20" y="48" width="250" height="84"/>
+        <text class="t-pk" x="34" y="72">🔑 customer_id</text>
+        <text class="t-col" x="34" y="96">name</text>
+        <text class="t-col" x="34" y="120">address</text>
+        <!-- products -->
+        <rect class="th" x="20" y="168" width="250" height="34" rx="8"/>
+        <text class="t-title" x="34" y="191">📦 products</text>
+        <rect class="tb" x="20" y="202" width="250" height="60"/>
+        <text class="t-pk" x="34" y="226">🔑 product_id</text>
+        <text class="t-col" x="34" y="250">product_name</text>
+        <!-- sales -->
+        <rect class="th" x="470" y="54" width="270" height="34" rx="8"/>
+        <text class="t-title" x="484" y="77">🧾 sales</text>
+        <rect class="tb" x="470" y="88" width="270" height="132"/>
+        <text class="t-pk" x="484" y="112">🔑 sale_id</text>
+        <text class="t-fk" x="484" y="136">🔗 customer_id</text>
+        <text class="t-fk" x="484" y="160">🔗 product_id</text>
+        <text class="t-col" x="484" y="184">sale_date</text>
+        <text class="t-col" x="484" y="208">cost</text>
+        <!-- links -->
+        <path class="link" d="M478,131 C380,131 380,67 274,67" marker-end="url(#arr)"/>
+        <path class="link" d="M478,155 C380,155 380,221 274,221" marker-end="url(#arr)"/>
+        <text class="t-note" x="320" y="290">Each arrow says: "look up the full details over there."</text>
+      </svg>
+      <div class="key-legend">
+        <span style="color:var(--lime-deep);">🔑 primary key: the row's unique ID</span>
+        <span style="color:var(--blue);">🔗 foreign key: a pointer to another table's ID</span>
+      </div>
+
+      <div class="section-tag">The same 6 purchases, stored relationally</div>
+      <div class="tbl-cap">👤 customers <small>each name written once · two Joe Smiths, two IDs</small></div>
+      <div class="tbl-wrap"><table class="dt" id="relCust"></table></div>
+      <div class="tbl-cap">🧾 sales <small>just numbers pointing at the other tables</small></div>
+      <div class="tbl-wrap"><table class="dt" id="relSales"></table></div>
+
+      <div class="box hook">
+        <div class="dl">Guess first</div>
+        <p>Remember the second Joe Smith? Customer 1 and customer 3 have the same name. How does a sale know which Joe it belongs to?</p>
+      </div>
+      <div class="guess-row" id="l4Guess">
+        <button class="guess" data-g="name">By name</button>
+        <button class="guess" data-g="addr">By address</button>
+        <button class="guess" data-g="id">By customer_id</button>
+      </div>
+      <div class="reveal-body" id="l4Reveal">
+        <div class="box discuss">
+          <div class="dl">Answer</div>
+          <p><b>By customer_id.</b> The sale stores 1 or 3, never the name, so it can only point at one Joe. (The address only works if it's filled in and nobody shares a hut.) The same design handles your three tasks:</p>
+          <ul style="margin-top:8px;">
+            <li>🔤 <b>Task 1:</b> the clerk picks customer 1 instead of typing a name, so there is nothing to misspell.</li>
+            <li>📇 <b>Task 2:</b> address, phone and email live once in <b>customers</b>: 6 cells, not 48.</li>
+            <li>✏️ <b>Task 3:</b> rename Joe or the whiskey in one cell. No copies, so none can be missed, and no other cell gets touched by accident.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="box gotcha">
+        <div class="dl">🚩 The trade-off nobody mentions</div>
+        <p>The sales table on its own is unreadable: "customer 1 bought product 2". To get names back you have to <b>join</b> the tables. You'll try it in the hands-on. Relational buys you correctness and pays for it with an extra step every time you read.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 4 -->
+    <div class="page" id="page-4">
+      <h2>SQL and the client app 🖥️<span class="time-tag">8 MIN</span></h2>
+      <p class="lede">The database lives somewhere you can't click on. You talk to it by typing <b>SQL</b> (Structured Query Language) into a <b>client app</b>.</p>
+
+      <div class="mini-flow">
+        <div class="mf-step"><span class="mf-no">YOU</span><span class="mf-title">Ask a question</span><span class="mf-sub">"What did Joe buy?"</span></div>
+        <div class="mf-arrow">→</div>
+        <div class="mf-step cool"><span class="mf-no">CLIENT APP</span><span class="mf-title">Type it as SQL</span><span class="mf-sub">MySQL Workbench, SQLite Online</span></div>
+        <div class="mf-arrow">→</div>
+        <div class="mf-step"><span class="mf-no">DATABASE ENGINE</span><span class="mf-title">Finds and joins rows</span><span class="mf-sub">MySQL, SQLite, PostgreSQL</span></div>
+        <div class="mf-arrow">→</div>
+        <div class="mf-step hot"><span class="mf-no">RESULT</span><span class="mf-title">A table comes back</span><span class="mf-sub">ready for Sheets or Tableau</span></div>
+      </div>
+
+      <div class="section-tag">Read SQL like a sentence</div>
+      <pre class="sql"><span class="kw">SELECT</span> name, address      <span class="cm">-- which columns do you want?</span>
+<span class="kw">FROM</span>   customers          <span class="cm">-- from which table?</span>
+<span class="kw">WHERE</span>  customer_id = 1;   <span class="cm">-- only the rows that match this</span></pre>
+      <div class="box discuss">
+        <div class="dl">Same idea as your filter view</div>
+        <p>SELECT is "which columns to show", WHERE is the filter dropdown. You already know the logic. SQL just writes it down so it can be rerun, shared, and checked.</p>
+      </div>
+
+      <div class="box hook">
+        <div class="dl">Guess first</div>
+        <p>"MySQL" is the window you type into. True or false?</p>
+      </div>
+      <div class="guess-row" id="l5Guess">
+        <button class="guess" data-g="t">True</button>
+        <button class="guess" data-g="f">False</button>
+      </div>
+      <div class="reveal-body" id="l5Reveal">
+        <div class="app-grid">
+          <div class="app-card my"><span class="a-t">MySQL</span><span class="a-s">a database engine (server)</span>
+            <ul><li>Stores the tables and runs the SQL</li><li>You talk to it through a client, such as <b>MySQL Workbench</b></li><li>Needs installing or a hosted server</li></ul></div>
+          <div class="app-card lite"><span class="a-t">SQLite</span><span class="a-s">a database engine (just a file)</span>
+            <ul><li>The whole database is one file, no server</li><li><b>SQLite Online</b> is a client that runs it in your browser</li><li>What you'll use today: nothing to install</li></ul></div>
+        </div>
+        <div class="box discuss">
+          <div class="dl">Answer: false</div>
+          <p>MySQL is the engine that stores and searches. The window is the client (Workbench). People mix them up because they're always used together, like saying "Gmail" for both the inbox page and the mail server.</p>
+        </div>
+      </div>
+
+      <div class="box gotcha">
+        <div class="dl">🚩 "SQL is SQL" is only mostly true</div>
+        <p>The basics (SELECT, FROM, WHERE, JOIN) work almost everywhere. Small details differ between engines. Example: MySQL uses <code class="f">AUTO_INCREMENT</code> for automatic IDs, SQLite doesn't. If a query from the internet errors, check which engine it was written for.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 5 -->
+    <div class="page" id="page-5">
+      <h2>Hands-on: build the store ⛏️<span class="time-tag">15 MIN</span></h2>
+      <p class="lede">Open <a class="src-link" href="https://sqliteonline.com/" target="_blank" rel="noopener">sqliteonline.com</a>. You'll rebuild your Level 2 ledger as a database: the same 16 sales, plus the new Joe Smith. Paste each mission, click <b>Run</b>, and guess the answer before you peek.</p>
+
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">M1</span>Build the 3 tables</span><button class="copy" data-copy="m1">📋 Copy</button></div>
+        <pre class="sql" id="m1"><span class="kw">CREATE TABLE</span> customers (customer_id <span class="kw">INTEGER PRIMARY KEY</span>, name TEXT, address TEXT, phone TEXT, email TEXT);
+<span class="kw">CREATE TABLE</span> products  (product_id <span class="kw">INTEGER PRIMARY KEY</span>, product_name TEXT <span class="kw">UNIQUE</span>);
+<span class="kw">CREATE TABLE</span> sales (sale_id <span class="kw">INTEGER PRIMARY KEY</span>, customer_id INTEGER, product_id INTEGER, sale_date TEXT, cost REAL);
+
+<span class="kw">INSERT INTO</span> customers <span class="kw">VALUES</span>
+  (1, 'Joe "Goldentooth" Smith',  'Stinky Hut #23',      '555-0123', 'joe.goldentooth@goldgulch.example'),
+  (2, 'Clara "Panhandle" Briggs', 'Creekside Tent #4',   '555-0147', 'clara.briggs@goldgulch.example'),
+  (3, 'Joe Smith',                'Claim 9, South Fork', '555-0162', 'joe.smith@goldgulch.example');
+
+<span class="kw">INSERT INTO</span> products <span class="kw">VALUES</span>
+  (1, 'Cat gut banjo strings'), (2, 'Bottle of whiskey'), (3, 'Can of soup'),
+  (4, 'Golden tooth'), (5, 'Sack of flour'), (6, 'Pickaxe'),
+  (7, 'Wool blanket'), (8, 'Dozen candles'), (9, 'Pound of coffee');
+
+<span class="kw">INSERT INTO</span> sales <span class="kw">VALUES</span>
+  ( 1, 1, 1, '1897-12-23', 0.15), ( 2, 2, 2, '1897-12-28', 0.75),
+  ( 3, 1, 2, '1897-12-31', 0.75), ( 4, 1, 3, '1898-01-02', 0.05),
+  ( 5, 2, 2, '1898-01-03', 0.75), ( 6, 1, 4, '1898-02-12', 20.99),
+  ( 7, 1, 5, '1898-02-14', 0.40), ( 8, 2, 3, '1898-02-15', 0.05),
+  ( 9, 1, 6, '1898-02-18', 1.25), (10, 1, 2, '1898-02-20', 0.75),
+  (11, 2, 7, '1898-02-21', 2.50), (12, 1, 3, '1898-02-23', 0.05),
+  (13, 2, 8, '1898-02-25', 0.20), (14, 1, 9, '1898-02-26', 0.30),
+  (15, 2, 2, '1898-02-27', 0.75), (16, 1, 5, '1898-02-28', 0.40);</pre>
+        <p>No result table here. The three tables appear in the left sidebar. Joe's phone and email are written <b>once</b>, not 16 times like in Task 2. And the two Joe Smiths get different IDs: 1 and 3.</p>
+      </div>
+
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">M2</span>Look at the sales table</span><button class="copy" data-copy="m2">📋 Copy</button></div>
+        <pre class="sql" id="m2"><span class="kw">SELECT</span> * <span class="kw">FROM</span> sales;</pre>
+        <button class="peek" data-peek="em2">Peek at what you should see</button>
+        <div class="expect" id="em2"><div class="box discuss"><div class="dl">Expect</div><p>16 rows, and no names or products in them, only ID numbers. That's the "unreadable on its own" trade-off from Level 3.</p></div></div>
+      </div>
+
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">M3</span>JOIN it back into a readable ledger</span><button class="copy" data-copy="m3">📋 Copy</button></div>
+        <pre class="sql" id="m3"><span class="kw">SELECT</span> s.sale_date, c.name, p.product_name, s.cost
+<span class="kw">FROM</span> sales s
+<span class="kw">JOIN</span> customers c <span class="kw">ON</span> s.customer_id = c.customer_id
+<span class="kw">JOIN</span> products  p <span class="kw">ON</span> s.product_id  = p.product_id
+<span class="kw">ORDER BY</span> s.sale_date;</pre>
+        <button class="peek" data-peek="em3">Peek at what you should see</button>
+        <div class="expect" id="em3"><div class="box discuss"><div class="dl">Expect</div><p>Your Level 2 sheet is back: 16 sales, built on the fly, with <b>no typos</b>. Every sale points to customer 1 or 2, so there's nothing to misspell. <code class="f">JOIN ... ON</code> means "match the ID here to the ID there". The letters s, c, p are nicknames so you don't retype table names.</p></div></div>
+      </div>
+
+      <div class="box sheets">
+        <div class="dl">3 more words for the next missions</div>
+        <p><code class="f">COUNT(*)</code> how many rows · <code class="f">DISTINCT</code> each value once · <code class="f">SUM(cost)</code> add up a column. <code class="f">WHERE</code> keeps only the rows that match.</p>
+      </div>
+
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">M4</span>How many sales?</span><button class="copy" data-copy="m4">📋 Copy</button></div>
+        <pre class="sql" id="m4"><span class="kw">SELECT</span> <span class="kw">COUNT</span>(*) <span class="kw">FROM</span> sales;</pre>
+        <button class="peek" data-peek="em4">Peek at what you should see</button>
+        <div class="expect" id="em4"><div class="box discuss"><div class="dl">Expect</div><p><b>16</b>. Same as the rows in your Level 2 sheet.</p></div></div>
+      </div>
+
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">M5</span>Which customers have bought something?</span><button class="copy" data-copy="m5">📋 Copy</button></div>
+        <pre class="sql" id="m5"><span class="kw">SELECT</span> <span class="kw">DISTINCT</span> customer_id <span class="kw">FROM</span> sales;</pre>
+        <button class="peek" data-peek="em5">Peek at what you should see</button>
+        <div class="expect" id="em5"><div class="box discuss"><div class="dl">Expect</div><p>Only <b>1</b> and <b>2</b>. DISTINCT shows each value once, so 16 rows shrink to 2 buyers. Customer 3, the new Joe Smith, hasn't bought anything yet. Your Task 1 pivot showed 4 "customers". Here typos can't create extra ones, because a sale stores a number, not a typed name.</p></div></div>
+      </div>
+
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">M6</span>How much did Joe spend?</span><button class="copy" data-copy="m6">📋 Copy</button></div>
+        <pre class="sql" id="m6"><span class="kw">SELECT</span> <span class="kw">SUM</span>(cost) <span class="kw">FROM</span> sales <span class="kw">WHERE</span> customer_id = 1;</pre>
+        <p>Then change the 1 to a 2 for Clara.</p>
+        <button class="peek" data-peek="em6">Peek at what you should see</button>
+        <div class="expect" id="em6"><div class="box discuss"><div class="dl">Expect</div><p>Joe: <b>25.09</b>. Clara: <b>5.0</b>. In Task 1 the pivot split Joe into $23.84 and $1.25 because of "Goaldentooth". Here it's one number on the first try.</p></div></div>
+      </div>
+
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">M7</span>Joe loses his tooth</span><button class="copy" data-copy="m7">📋 Copy</button></div>
+        <pre class="sql" id="m7"><span class="kw">UPDATE</span> customers
+<span class="kw">SET</span>    name = 'Joe "Missingtooth" Smith'
+<span class="kw">WHERE</span>  customer_id = 1;</pre>
+        <p>Then run <b>M3</b> again, and check his email: <code class="f">SELECT * FROM customers;</code></p>
+        <button class="peek" data-peek="em7">Peek at what you should see</button>
+        <div class="expect" id="em7"><div class="box discuss"><div class="dl">Expect</div><p>All <b>10</b> of Joe's sales in the ledger say "Missingtooth", and his email still says <code class="f">joe.goldentooth@...</code>. You changed <b>one</b> row. In Task 3, Find and replace missed a row and changed his email.</p></div></div>
+      </div>
+
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">M8</span>The supplier renames whiskey</span><button class="copy" data-copy="m8">📋 Copy</button></div>
+        <pre class="sql" id="m8"><span class="kw">UPDATE</span> products
+<span class="kw">SET</span>    product_name = 'Whiskey (1 bottle)'
+<span class="kw">WHERE</span>  product_id = 2;</pre>
+        <p>Then count the whiskey sales: <code class="f">SELECT COUNT(*) FROM sales WHERE product_id = 2;</code></p>
+        <button class="peek" data-peek="em8">Peek at what you should see</button>
+        <div class="expect" id="em8"><div class="box discuss"><div class="dl">Expect</div><p><b>5</b>, including the sale the clerk spelled "whisky" in Task 1. In Task 3, COUNTIF found only 4. Here nobody typed the product name on a sale, so there's nothing to miss. Run M3 to see the new name on every whiskey sale.</p></div></div>
+      </div>
+
+      <div class="mission">
+        <div class="m-head"><span class="m-t"><span class="m-n">M9</span>Try to sneak in a duplicate product</span><button class="copy" data-copy="m9">📋 Copy</button></div>
+        <pre class="sql" id="m9"><span class="kw">INSERT INTO</span> products (product_name) <span class="kw">VALUES</span> ('Whiskey (1 bottle)');</pre>
+        <button class="peek" data-peek="em9">Peek at what you should see</button>
+        <div class="expect" id="em9"><div class="box discuss"><div class="dl">Expect</div><p>An error: <code class="f">UNIQUE constraint failed</code>. The database refuses a second "Whiskey (1 bottle)". A sheet would have quietly accepted it.</p></div></div>
+      </div>
+
+      <div class="box gotcha">
+        <div class="dl">🚩 Honest limit</div>
+        <p>UNIQUE stops an exact duplicate. It won't stop someone adding "Whisky (1 bottle)" as a brand-new product. A database enforces the rules you give it. Deciding the rules is still your job.</p>
+      </div>
+      <div class="box sheets">
+        <div class="dl">Ran M1 twice by accident?</div>
+        <p>You'll get an error, because the tables already exist. Run <code class="f">DROP TABLE customers; DROP TABLE products; DROP TABLE sales;</code> and start again from M1.</p>
+      </div>
+    </div>
+
+    <!-- LEVEL 6 -->
+    <div class="page" id="page-6">
+      <h2>That's today 🎉<span class="time-tag">4 MIN</span></h2>
+      <p class="recap-statement">A <span class="hl-pink">flat file</span> repeats facts, so copies drift. A <span class="hl-green">relational database</span> stores each fact once and links it by ID. <span class="hl-blue">SQL</span>, typed into a client app, puts it back together and asks it questions.</p>
+
+      <div class="section-tag">Quick check: tap to reveal</div>
+      <div class="qq-grid" id="matchGrid"></div>
+
+      <div class="section-tag">Try it with AI</div>
+      <div class="prompt"><span class="p-tag">Paste-ready prompt</span><span id="promptText">Here is a flat ledger with columns customer, date, article, cost:
+Joe "Goldentooth" Smith, 1897-12-23, Cat gut banjo strings, 0.15
+Clara "Panhandle" Briggs, 1897-12-28, Bottle of whiskey, 0.75
+Joe "Goldentooth" Smith, 1897-12-31, Bottle of whiskey, 0.75
+Split this into relational tables. Name the primary key and foreign keys of each table, explain in one sentence why each table exists, and write CREATE TABLE statements that run in SQLite.</span></div>
+      <div style="margin-top:10px;"><button class="start-btn small alt" id="copyPrompt">📋 Copy prompt</button> <span id="copyMsg" style="font-family:'JetBrains Mono',monospace;font-size:12px;margin-left:8px;"></span></div>
+      <div class="box gotcha">
+        <div class="dl">🚩 Check its answer</div>
+        <ul>
+          <li>It should land on 3 tables: customers, products, sales. If customer names still sit inside the sales table, it missed the point.</li>
+          <li>Sales should hold two foreign keys: customer_id and product_id.</li>
+          <li>Paste its CREATE TABLE code into SQLite Online. If you see <code class="f">AUTO_INCREMENT</code> and it errors, the AI wrote MySQL, not SQLite. Ask it to fix that.</li>
+        </ul>
+      </div>
+
+      <div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;">
+        <span class="b-chip">🅿️ Parked for later: types of JOIN, GROUP BY in depth, designing tables from scratch</span>
+      </div>
+      <div class="next-tag">Next → you'll write your own queries in SQLite Online and use AI to check them.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('hello').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+});
+document.querySelectorAll('.lvl').forEach(l => {
+  l.setAttribute('role','button'); l.tabIndex = 0;
+  l.addEventListener('click', () => activateLevel(l.dataset.lvl));
+  l.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); activateLevel(l.dataset.lvl); } });
+});
+function activateLevel(id){
+  const total = document.querySelectorAll('.lvl').length;
+  document.querySelectorAll('.lvl').forEach(l => l.classList.toggle('active', l.dataset.lvl === id));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + id));
+  document.getElementById('xpFill').style.width = (id / total * 100) + '%';
+  document.getElementById('xpCount').textContent = 'LVL ' + id + ' / ' + total;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function guessGroup(groupId, rightVal, revealId){
+  document.querySelectorAll('#' + groupId + ' .guess').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#' + groupId + ' .guess').forEach(x => x.classList.remove('right','wrong'));
+    b.classList.add(b.dataset.g === rightVal ? 'right' : 'wrong');
+    document.getElementById(revealId).classList.add('open');
+  }));
+}
+guessGroup('l2Guess','6','l2Reveal');
+guessGroup('l4Guess','id','l4Reveal');
+guessGroup('l5Guess','f','l5Reveal');
+
+/* ---------- ledger data (flat) ---------- */
+const JG = 'Joe "Goldentooth" Smith', JM = 'Joe "Missingtooth" Smith', CB = 'Clara "Panhandle" Briggs';
+const reviewRows = [
+  [JG,'1897-12-23','Cat gut banjo strings',0.15],
+  [CB,'1897-12-28','Bottle of whiskey',0.75],
+  [JG,'1897-12-31','Bottle of whiskey',0.75],
+  [JG,'1898-01-02','Can of soup',0.05],
+  [CB,'1898-01-03','Bottle of whiskey',0.75],
+  [JG,'1898-02-12','Golden tooth',20.99]
+];
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const money = v => '$' + v.toFixed(2);
+function renderFlat(id, rows, opts = {}){
+  const t = document.getElementById(id);
+  const hdr = opts.addr ? ['customer','address','date','article','cost'] : ['customer','date','article','cost'];
+  let html = '<thead><tr>' + hdr.map(h => `<th class="${h==='cost'?'num':''}">${h}</th>`).join('') + '</tr></thead><tbody>';
+  rows.forEach((r, i) => {
+    const c = (opts.cls && opts.cls[i]) || {};
+    html += '<tr>';
+    html += `<td class="${c.name||''}">${esc(r[0])}</td>`;
+    if (opts.addr) html += `<td class="${c.addr||''}">${esc(opts.addr[i])}</td>`;
+    html += `<td>${r[1]}</td><td class="${c.art||''}">${esc(r[2])}</td><td class="num">${r[3].toFixed(2)}</td></tr>`;
+  });
+  t.innerHTML = html + '</tbody>';
+}
+renderFlat('ledgerReview', reviewRows);
+
+/* ---------- LEVEL 1: same ledger as raw CSV text, commas and quotes highlighted ---------- */
+(function(){
+  const q = v => /[",]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  const lines = ['customer,date,article,cost'].concat(reviewRows.map(r => [r[0], r[1], r[2], r[3].toFixed(2)].map(q).join(',')));
+  const paint = l => esc(l).replace(/"/g, '<b class="k-quote">"</b>').replace(/,/g, '<b class="k-comma">,</b>');
+  document.getElementById('copyLedger').addEventListener('click', e => {
+    const b = e.target, old = b.textContent;
+    copyText(lines.join('\n') + '\n', () => { b.textContent = '✓ Copied'; setTimeout(() => b.textContent = old, 1400); },
+                                        () => { b.textContent = 'Select the text above + copy by hand'; });
+  });
+  document.getElementById('ledgerRaw').innerHTML =
+    lines.map((l, i) => `<span class="ln">${i + 1}</span>${paint(l)}`).join('\n');
+  document.getElementById('showGrid').addEventListener('click', e => {
+    const w = document.getElementById('gridWrap'), open = w.style.display === 'block';
+    w.style.display = open ? 'none' : 'block';
+    e.target.textContent = open ? '📊 Compare with the expected table' : '📄 Hide the table';
+  });
+})();
+
+/* ---------- LEVEL 2: grow the ledger ---------- */
+function revealGrid(gridId, items){
+  const g = document.getElementById(gridId);
+  items.forEach(t => {
+    const c = document.createElement('div'); c.className = 'qq-card';
+    c.setAttribute('role','button'); c.tabIndex = 0;
+    c.innerHTML = `<div class="qq-q">${t.q}</div><div class="qq-hint">tap to reveal →</div><div class="qq-a">${t.a}</div>`;
+    const flip = () => c.classList.toggle('revealed');
+    c.addEventListener('click', flip);
+    c.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); flip(); } });
+    g.appendChild(c);
+  });
+}
+/* tasks */
+(function(){
+  const sales = [
+    [JG,'1898-02-14','Sack of flour',0.40], [CB,'1898-02-15','Can of soup',0.05],
+    ['Joe "Goaldentooth" Smith','1898-02-18','Pickaxe',1.25], [JG,'1898-02-20','Bottle of whiskey',0.75],
+    [CB,'1898-02-21','Wool blanket',2.50], [JG,'1898-02-23','Can of soup',0.05],
+    ['Clara "Pahandle" Briggs','1898-02-25','Dozen candles',0.20], [JG,'1898-02-26','Pound of coffee',0.30],
+    [CB,'1898-02-27','Bottle of whisky',0.75], [JG,'1898-02-28','Sack of flour',0.40]
+  ];
+  document.getElementById('newSales').innerHTML =
+    '<thead><tr><th>A · customer</th><th>B · date</th><th>C · article</th><th class="num">D · cost</th></tr></thead><tbody>' +
+    sales.map(r => `<tr><td>${esc(r[0])}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3].toFixed(2)}</td></tr>`).join('') + '</tbody>';
+  document.getElementById('copyNewSales').addEventListener('click', e => {
+    const b = e.target, old = b.textContent;
+    const tsv = sales.map(r => [r[0], r[1], r[2], r[3].toFixed(2)].join('\t')).join('\n');
+    copyText(tsv, () => { b.textContent = '✓ Copied'; setTimeout(() => b.textContent = old, 1400); },
+                  () => { b.textContent = 'Copy failed: type them in'; });
+  });
+  const people = [
+    [JG, 'Stinky Hut #23', '555-0123', 'joe.goldentooth@goldgulch.example'],
+    [CB, 'Creekside Tent #4', '555-0147', 'clara.briggs@goldgulch.example']
+  ];
+  document.getElementById('contacts').innerHTML =
+    '<thead><tr><th>customer</th><th>address</th><th>phone</th><th>email</th></tr></thead><tbody>' +
+    people.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('') + '</tbody>';
+  revealGrid('identityGrid', [
+    {q:'👥 A new miner shows up. He is also called Joe Smith, no nickname. Clerks write "Joe Smith" for both men. At month end, how much did each Joe spend?',
+     a:'<b>Nobody can tell.</b> Filters, pivots and Find and replace all work on the text, and the text is identical. Who bought what was never written down. The only fix happens before the sale: give each customer a number and write it on every sale. That number is a <b>primary key</b>.'}
+  ]);
+})();
+
+/* ---------- LEVEL 3: relational tables ---------- */
+(function(){
+  document.getElementById('relCust').innerHTML =
+    '<thead><tr><th>🔑 customer_id</th><th>name</th><th>address</th></tr></thead><tbody>' +
+    `<tr><td class="key">1</td><td>${esc(JG)}</td><td>Stinky Hut #23</td></tr>` +
+    `<tr><td class="key">2</td><td>${esc(CB)}</td><td>Creekside Tent #4</td></tr>` +
+    `<tr><td class="key">3</td><td>Joe Smith</td><td>Claim 9, South Fork</td></tr></tbody>`;
+  const sales = [[1,1,1,'1897-12-23',0.15],[2,2,2,'1897-12-28',0.75],[3,1,2,'1897-12-31',0.75],[4,1,3,'1898-01-02',0.05],[5,2,2,'1898-01-03',0.75],[6,1,4,'1898-02-12',20.99]];
+  document.getElementById('relSales').innerHTML =
+    '<thead><tr><th>🔑 sale_id</th><th>🔗 customer_id</th><th>🔗 product_id</th><th>sale_date</th><th class="num">cost</th></tr></thead><tbody>' +
+    sales.map(s => `<tr><td>${s[0]}</td><td class="key">${s[1]}</td><td class="key">${s[2]}</td><td>${s[3]}</td><td class="num">${money(s[4])}</td></tr>`).join('') + '</tbody>';
+})();
+
+/* ---------- LEVEL 5: copy + peek ---------- */
+function copyText(txt, onOk, onFail){
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(onOk, onFail);
+}
+document.querySelectorAll('.copy[data-copy]').forEach(b => b.addEventListener('click', () => {
+  const txt = document.getElementById(b.dataset.copy).textContent;
+  const old = b.textContent;
+  copyText(txt, () => { b.textContent = '✓ Copied'; setTimeout(() => b.textContent = old, 1400); },
+                () => { b.textContent = 'Select + copy by hand'; });
+}));
+document.querySelectorAll('.peek').forEach(b => b.addEventListener('click', () => {
+  const e = document.getElementById(b.dataset.peek);
+  e.classList.toggle('open');
+  b.textContent = e.classList.contains('open') ? 'Hide' : 'Peek at what you should see';
+}));
+
+/* ---------- LEVEL 6 ---------- */
+const matchItems = [
+  {q:'🔧 Find and Replace fixes the Joe problem in Sheets. So why use a database?', a:'Find and Replace <b>repairs</b> it after you notice. A database <b>prevents</b> it: one copy of each fact, rules on what can be entered, and an ID for every customer. Two people with the same name are something only the ID can handle.'},
+  {q:'🔑 What makes a row\'s primary key special?', a:'It\'s <b>unique</b>: no two rows share it. customer_id 1 is Joe and only Joe.'},
+  {q:'🔗 Where does a foreign key live, and what does it do?', a:'In the table that <b>points</b> (sales). It holds another table\'s ID, like customer_id 1, so the details live in one place.'},
+  {q:'📊 Is a flat file ever the right choice?', a:'Yes. Small data, one editor, quick analysis. Analysts often JOIN tables in SQL and export one flat result to Sheets or Tableau on purpose.'}
+];
+(function(){
+  const g = document.getElementById('matchGrid');
+  matchItems.forEach(t => {
+    const c = document.createElement('div'); c.className = 'qq-card';
+    c.setAttribute('role','button'); c.tabIndex = 0;
+    c.innerHTML = `<div class="qq-q">${t.q}</div><div class="qq-hint">tap to reveal →</div><div class="qq-a">${t.a}</div>`;
+    const flip = () => c.classList.toggle('revealed');
+    c.addEventListener('click', flip);
+    c.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); flip(); } });
+    g.appendChild(c);
+  });
+})();
+document.getElementById('copyPrompt').addEventListener('click', () => {
+  const msg = document.getElementById('copyMsg');
+  copyText(document.getElementById('promptText').textContent,
+    () => { msg.textContent = 'Copied ✓'; }, () => { msg.textContent = 'Select the text above and copy it by hand.'; });
+});
+</script>
+
+</body>
+</html>
