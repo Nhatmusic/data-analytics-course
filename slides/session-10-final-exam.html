@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 10 | Season 1 Final Exam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* palette: bg #fafaf6 · panel #ffffff · ink #14141a · lime #a4d925 · pink #ff3d94 · blue #2f7dff · yellow #ffc328
+     type: Space Grotesk (display) · Inter (body) · JetBrains Mono (labels)
+     same field-notebook system as Sessions 01-08. One-slide exam briefing. */
+  :root{
+    --bg:#fafaf6; --panel:#ffffff; --panel2:#f2f2ea; --line:#1c1c22; --ink:#14141a; --muted:#6c6c76;
+    --lime:#a4d925; --pink:#ff3d94; --blue:#2f7dff; --yellow:#ffc328; --lime-deep:#5c7a17; --red:#e0405a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 22px;}
+  .slide{width:100%;max-width:1040px;background:var(--panel);border:2px solid var(--line);border-radius:20px;padding:30px 30px 32px;}
+  .badge{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+  h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(28px,5vw,42px);margin:6px 0 4px;line-height:1.15;}
+  h1 span{color:var(--pink);}
+  .lede{font-size:15.5px;color:var(--muted);margin:0 0 22px;}
+
+  .parts{display:grid;grid-template-columns:55fr 25fr;gap:14px;}
+  @media (max-width:700px){ .parts{grid-template-columns:1fr;} }
+  .part{border:2px solid var(--line);border-radius:16px;padding:18px 20px;}
+  .part.p1{background:rgba(47,125,255,0.10);}
+  .part.p2{background:rgba(255,61,148,0.10);}
+  .part .tag{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+  .part .t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:21px;display:block;margin:4px 0 8px;}
+  .part p{margin:0;font-size:14.5px;line-height:1.55;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .chip{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;background:#fff;border:1.5px solid var(--line);border-radius:8px;padding:4px 9px;}
+  .chip.boss{background:var(--ink);color:var(--yellow);border-color:var(--ink);}
+
+  .bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;}
+  @media (max-width:700px){ .bottom{grid-template-columns:1fr;} }
+  .box{border:2px solid var(--line);border-radius:16px;padding:16px 20px;}
+  .box.submit{border-top:8px solid var(--lime-deep);}
+  .box.ai{border-top:8px solid var(--yellow);}
+  .box .dl{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;margin-bottom:8px;}
+  .box ul{margin:0;padding-left:20px;font-size:14px;line-height:1.65;}
+
+  #hello{min-height:100vh;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px;padding:24px;}
+  #hello .badge{font-size:13px;border:1px solid var(--line);padding:6px 14px;border-radius:20px;}
+  #hello h1{font-size:clamp(32px,7vw,58px);margin:0;line-height:1.14;}
+  #hello p.sub{font-size:16px;color:var(--muted);max-width:54ch;margin:0;}
+  .start-btn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--ink);background:var(--lime);border:2px solid var(--ink);padding:16px 36px;border-radius:40px;cursor:pointer;box-shadow:0 6px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;}
+  .start-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink);}
+  .start-btn:focus-visible{outline:3px solid var(--pink);outline-offset:3px;}
+  #main, #go{display:none;width:100%;justify-content:center;}
+  .nav{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+  .start-btn.small{font-size:15px;padding:11px 22px;box-shadow:0 5px 0 var(--ink);}
+  .start-btn.ghost{background:var(--panel);}
+  .go-slide{text-align:center;padding:48px 30px 40px;}
+  .go-slide h1{font-size:clamp(30px,6vw,48px);margin:10px 0 8px;}
+  .go-slide .lede{margin:0 auto 28px;max-width:52ch;}
+  a.start-btn{text-decoration:none;display:inline-block;font-size:24px;padding:20px 44px;}
+  .url{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;background:var(--panel2);border:1.5px solid var(--line);border-radius:10px;padding:10px 14px;display:inline-block;margin-top:28px;word-break:break-all;user-select:all;}
+  .url-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:22px;}
+</style>
+</head>
+<body>
+
+<div id="hello">
+  <div class="badge">Session 10</div>
+  <h1>Season 1 <span>Final Exam</span> 🍕</h1>
+  <p class="sub">Nine sessions of skills, one real business problem. Today you show what you can do, and that you understand how you did it.</p>
+  <button class="start-btn" id="startBtn">Let's go ▶</button>
+</div>
+
+<div id="main">
+<div class="slide">
+  <div class="badge">Session 10 · Season 1 Final Exam</div>
+  <h1>Solve it, then <span>explain it</span>.</h1>
+  <p class="lede">Two parts, one class. Work like a junior analyst, then show you understand your own work.</p>
+
+  <div class="parts">
+    <div class="part p1">
+      <span class="tag">Part 1 · 55 min · everyone</span>
+      <span class="t">🗺️ Answer the questions</span>
+      <p>Clear 5 multiple-choice levels to unlock the Boss level: a real pizza shop dataset and a business problem.</p>
+      <div class="chips">
+        <span class="chip">L1</span><span class="chip">L2</span><span class="chip">L3</span><span class="chip">L4</span><span class="chip">L5</span><span class="chip boss">👑 BOSS</span>
+      </div>
+    </div>
+    <div class="part p2">
+      <span class="tag">Part 2 · 10 min each</span>
+      <span class="t">🎙️ Defense</span>
+      <p>One on one with the teacher. Walk through what you did and why. Others wait in the waiting room.</p>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="box submit">
+      <div class="dl">📤 How to submit: one Google Doc</div>
+      <ul>
+        <li>Your answers</li>
+        <li>Screenshot of your SQL result</li>
+        <li>Your chart in Excel</li>
+      </ul>
+    </div>
+    <div class="box ai">
+      <div class="dl">🤖 All tools welcome, AI included</div>
+      <ul>
+        <li>Used AI? Paste the shared chat link in your Google Doc</li>
+        <li>Share it at the end so the link shows the whole chat</li>
+      </ul>
+    </div>
+  </div>
+  <div class="nav"><button class="start-btn small" data-show="go">Take the exam ▶</button></div>
+</div>
+</div>
+
+<div id="go">
+<div class="slide go-slide">
+  <div class="badge">Session 10 · Part 1 · 55 min</div>
+  <h1>Your quest <span>starts here</span> 🍕</h1>
+  <p class="lede">Click the button, enter your name, and clear the 5 levels to unlock the Boss. Keep your Google Doc open next to it.</p>
+  <a class="start-btn" href="https://claude.ai/artifact/Bz9Wbv3NsYNxQS4ftnAB8m" target="_blank" rel="noopener">Start the exam ▶</a>
+  <div class="url-label">Button not working? Copy this link</div>
+  <div class="url">https://claude.ai/artifact/Bz9Wbv3NsYNxQS4ftnAB8m</div>
+  <div class="nav"><button class="start-btn small ghost" data-show="main">◀ Back</button></div>
+</div>
+</div>
+
+<script>
+function show(id){
+  ['hello','main','go'].forEach(s => document.getElementById(s).style.display = 'none');
+  document.getElementById(id).style.display = 'flex';
+  window.scrollTo(0,0);
+}
+document.getElementById('startBtn').addEventListener('click', () => show('main'));
+document.querySelectorAll('[data-show]').forEach(b => b.addEventListener('click', () => show(b.dataset.show)));
+</script>
+
+</body>
+</html>
