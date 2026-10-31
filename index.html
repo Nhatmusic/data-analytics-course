@@ -60,6 +60,8 @@
   .session-card[data-session="s6"]{--sc:var(--pink);}
   .session-card[data-session="s7"]{--sc:var(--lime);}
   .session-card[data-session="s8"]{--sc:var(--yellow);}
+  .session-card[data-session="s9"]{--sc:var(--blue);}
+  .session-card[data-session="s10"]{--sc:var(--pink);}
   .sc-badge{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
   .sc-badge b{color:var(--ink);}
   .session-card h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;margin:0 0 10px;line-height:1.25;}
@@ -173,6 +175,18 @@
         <p class="sc-desc">Grow a store ledger in a spreadsheet until it breaks, then rebuild it as related tables and query it with SQL.</p>
       </div>
 
+      <div class="session-card" data-session="s9" data-open="s9" tabindex="0" role="button">
+        <div class="sc-badge">Session 09 · <b>1 slide</b></div>
+        <h2>Basic SQL: Student Presentations</h2>
+        <p class="sc-desc">Nam Anh, Linh, and Thien An each teach one part: build and read tables, organize and fix data, then reshape and connect it.</p>
+      </div>
+
+      <div class="session-card" data-session="s10" data-open="s10" tabindex="0" role="button">
+        <div class="sc-badge">Session 10 · <b>6 quests</b></div>
+        <h2>The Final Quest</h2>
+        <p class="sc-desc">The Season 1 final: five quests on process, cleaning, functions, and charts, then a boss round on Plato's Pizza.</p>
+      </div>
+
     </div>
   </div>
 
@@ -226,7 +240,7 @@
     </div>
   </div>
 
-  <div class="site-footer">8 sessions live here — more will be added to this page as the course continues.</div>
+  <div class="site-footer">10 sessions live here — more will be added to this page as the course continues.</div>
 </div>
 
 <div id="viewer">
@@ -246,7 +260,9 @@ const SESSION_FILES = {
   s5: 'slides/session-05-data-visualization-intro.html',
   s6: 'slides/session-06-debate-free-will.html',
   s7: 'slides/session-07-statistics-basics.html',
-  s8: 'slides/session-08-relational-databases.html'
+  s8: 'slides/session-08-relational-databases.html',
+  s9: 'slides/session-09-basic-sql.html',
+  s10: 'slides/session-10-final-quest.html'
 };
 
 const SESSION_META = {
@@ -257,7 +273,9 @@ const SESSION_META = {
   s5: 'Session 05 — Numbers Into Pictures',
   s6: 'Session 06 — Listen First, Then Debate',
   s7: 'Session 07 — Two Kinds of Statistics',
-  s8: 'Session 08 — From Sheet to Database'
+  s8: 'Session 08 — From Sheet to Database',
+  s9: 'Session 09 — Basic SQL: Student Presentations',
+  s10: 'Session 10 — The Final Quest'
 };
 
 const landing = document.getElementById('landing');
