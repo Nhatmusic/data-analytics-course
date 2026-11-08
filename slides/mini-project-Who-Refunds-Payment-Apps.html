@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Who Refunds? Payment Apps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Course design system (same as session files)
+   Palette: bg #fafaf6 · ink #1c1c22 · lime #a4d925 · pink #ff3d94 · blue #2f7dff · yellow #ffc328
+   Type: Space Grotesk (headers) · Inter (body) · JetBrains Mono (labels/data)
+   Layout: one column of numbered levels, each a white panel with a thick ink border */
+:root{
+  --bg:#fafaf6; --panel:#ffffff; --ink:#1c1c22;
+  --lime:#a4d925; --pink:#ff3d94; --blue:#2f7dff; --yellow:#ffc328;
+  --muted:#5b5b66;
+  --display:"Space Grotesk",system-ui,sans-serif;
+  --body:"Inter",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body)}
+.wrap{max-width:900px;margin:0 auto;padding:0 18px 80px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+.mono{font-family:var(--mono)}
+
+/* HUD */
+.hud{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:3px solid var(--ink);padding:8px 18px;display:flex;align-items:center;gap:12px;font:700 12px var(--mono)}
+.bar{flex:1;height:12px;border:2px solid var(--ink);background:var(--panel);border-radius:6px;overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:var(--lime);transition:width .2s}
+
+/* splash */
+.splash{padding:48px 0 28px}
+.tag{display:inline-block;font:700 12px var(--mono);background:var(--yellow);border:2px solid var(--ink);padding:3px 8px;border-radius:4px}
+.splash h1{font-size:clamp(34px,6vw,56px);margin:14px 0 10px}
+.splash p{max-width:60ch;margin:0 0 18px;font-size:18px}
+.facts{display:flex;flex-wrap:wrap;gap:10px}
+.fact{background:var(--panel);border:3px solid var(--ink);border-radius:10px;padding:10px 14px;font:700 14px var(--mono);box-shadow:4px 4px 0 var(--ink)}
+
+/* levels */
+.level{background:var(--panel);border:3px solid var(--ink);border-radius:14px;padding:22px;margin-top:26px;box-shadow:6px 6px 0 var(--ink)}
+.lv{font:700 12px var(--mono);color:var(--muted);letter-spacing:.06em}
+.level h2{font-size:26px;margin:4px 0 12px}
+.level p{margin:0 0 12px;max-width:65ch}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.card{border:3px solid var(--ink);border-radius:10px;padding:14px;background:var(--bg)}
+.card h3{font-size:18px;margin:6px 0}
+.card p{font-size:14px;margin:0}
+.card .e{font-size:26px}
+.q{font-family:var(--display);font-size:clamp(22px,3.4vw,30px);font-weight:700;background:var(--lime);border:3px solid var(--ink);border-radius:10px;padding:16px;margin:0 0 16px}
+
+/* diagrams */
+.diagram{overflow-x:auto;margin:6px 0 4px}
+svg text{font-family:var(--mono);font-size:13px;fill:var(--ink)}
+.flow{stroke:var(--ink);stroke-width:3;fill:none;stroke-dasharray:8 8;animation:dash 1.2s linear infinite}
+.flow.helper{stroke:var(--pink);stroke-width:2.5}
+@keyframes dash{to{stroke-dashoffset:-16}}
+.pulse{animation:pulse 2.4s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
+@keyframes pulse{50%{transform:scale(1.06)}}
+
+/* steps */
+ol.steps{margin:0;padding-left:22px}
+ol.steps li{margin:6px 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{font:600 12px var(--mono);border:2px solid var(--ink);border-radius:20px;padding:3px 10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:2px solid var(--ink);padding:8px;text-align:left;vertical-align:top}
+th{background:var(--yellow);font-family:var(--mono);font-size:12px}
+.tablewrap{overflow-x:auto}
+a{color:var(--blue);font-weight:600}
+a:focus-visible,button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+/* timeline */
+.weeks{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.week{border:3px solid var(--ink);border-radius:10px;padding:14px;background:var(--bg);position:relative}
+.week .n{font:700 13px var(--mono);display:inline-block;padding:2px 8px;border:2px solid var(--ink);border-radius:4px}
+.w1 .n{background:var(--yellow)} .w2 .n{background:var(--blue);color:#fff} .w3 .n{background:var(--pink);color:#fff} .w4 .n{background:var(--lime)}
+.week h3{font-size:17px;margin:8px 0 6px}
+.week ul{margin:0;padding-left:18px;font-size:14px}
+.week .ok{margin-top:8px;font-size:13px;border-top:2px dashed var(--ink);padding-top:6px}
+
+/* reveal */
+details{border:3px solid var(--ink);border-radius:10px;padding:10px 14px;margin:10px 0;background:var(--bg)}
+summary{cursor:pointer;font-weight:600}
+details p{margin:8px 0 0}
+
+/* template */
+pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13px/1.6 var(--mono);white-space:pre-wrap;margin:0}
+.btn{font:700 13px var(--mono);background:var(--yellow);border:3px solid var(--ink);border-radius:8px;padding:8px 14px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);margin-top:10px}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.rule{border-left:8px solid var(--blue);background:var(--bg);padding:10px 12px;border-radius:6px;font-size:14px}
+.rule.no{border-left-color:var(--pink)}
+.mission{background:var(--yellow);border:3px solid var(--ink);border-radius:10px;padding:12px 14px;font-weight:600;margin-top:12px}
+
+/* navigation */
+.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:3px solid var(--ink)}
+.top .hud{position:static;border-bottom:0}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:0 18px 10px;scrollbar-width:thin}
+.tabs a{flex:none;font:700 12px var(--mono);color:var(--ink);text-decoration:none;border:2px solid var(--ink);border-radius:20px;padding:5px 12px;background:var(--panel);white-space:nowrap}
+.tabs a:hover{background:var(--yellow)}
+.tabs a[aria-current="page"]{background:var(--ink);color:#fff}
+.js .page{display:none}
+.js .page.active{display:block}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:22px;flex-wrap:wrap}
+.pager a{font:700 13px var(--mono);color:var(--ink);text-decoration:none;border:3px solid var(--ink);border-radius:8px;padding:8px 14px;background:var(--yellow);box-shadow:3px 3px 0 var(--ink)}
+.pager a.prev{background:var(--panel)}
+.pager span{flex:1}
+@media (prefers-reduced-motion:reduce){.flow,.pulse{animation:none}.bar span{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="top">
+<div class="hud"><span>MINI PROJECT</span><div class="bar" aria-hidden="true"><span id="xp"></span></div><span id="xptext">1 / 11</span></div>
+<nav class="tabs" aria-label="Sections">
+  <a href="#start">🏠 Start</a>
+  <a href="#question">1 Question</a>
+  <a href="#how">2 How it works</a>
+  <a href="#data">3 Dataset</a>
+  <a href="#tools">4 Tools</a>
+  <a href="#sql">5 SQL + Verify</a>
+  <a href="#boss">⚔️ Boss</a>
+  <a href="#tableau">6 Tableau</a>
+  <a href="#timeline">7 Timeline</a>
+  <a href="#report">8 Weekly report</a>
+  <a href="#rules">9 Rules + finish</a>
+</nav>
+</div>
+
+<div class="wrap">
+
+<header class="splash page" id="start">
+  <span class="tag">SEASON 1 · MINI PROJECT</span>
+  <h1>Is complaining worth it? 🧾</h1>
+  <p>You'll use real U.S. government complaint data to find out which payment apps actually fix problems for people like you.</p>
+  <div class="facts">
+    <span class="fact">⏱ 4 weeks</span>
+    <span class="fact">📝 Report every Friday</span>
+    <span class="fact">🎤 1 final meeting</span>
+    <span class="fact">🛠 Excel/Sheets · SQL · Tableau · Claude</span>
+  </div>
+  <div class="grid3" style="margin-top:18px">
+    <div class="card"><div class="e">🧮</div><h3>Practice SQL</h3><p>Write at least 5 queries that answer your own sub-questions.</p></div>
+    <div class="card"><div class="e">🔍</div><h3>Verify every query</h3><p>Prove your numbers are right, even as a beginner.</p></div>
+    <div class="card"><div class="e">📊</div><h3>Start Tableau</h3><p>Build and publish your first real charts.</p></div>
+  </div>
+</header>
+
+<!-- LEVEL 1 -->
+<section class="level page" id="question">
+  <div class="lv">LEVEL 1 · THE QUESTION</div>
+  <h2>What you're answering</h2>
+  <div class="q">"If something goes wrong in Cash App, Venmo, Zelle, or PayPal, who gives my money back?"</div>
+  <p><strong>Why it matters:</strong> you probably send money with these apps every week. Wrong transfer, frozen account, scam: you'd want to know who helps when things go wrong. This is real data that nobody has summarized for students yet.</p>
+  <p><strong>Everyone works on the same topic.</strong> Same data, same question. Your process, checks, and story are your own.</p>
+
+  <h3 style="margin:24px 0 6px;font-size:20px">🗺 Your path, step by step</h3>
+  <p>Same 6 steps you know from class.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 860 70" width="860" role="img" aria-label="Six steps: define, collect, clean, analyze, visualize, interpret">
+      <g font-weight="700">
+        <rect x="5" y="10" width="125" height="48" rx="8" fill="#ffc328" stroke="#1c1c22" stroke-width="3"/><text x="67" y="40" text-anchor="middle">1 Define</text>
+        <rect x="150" y="10" width="125" height="48" rx="8" fill="#fff" stroke="#1c1c22" stroke-width="3"/><text x="212" y="40" text-anchor="middle">2 Collect</text>
+        <rect x="295" y="10" width="125" height="48" rx="8" fill="#a4d925" stroke="#1c1c22" stroke-width="3"/><text x="357" y="40" text-anchor="middle">3 Clean</text>
+        <rect x="440" y="10" width="125" height="48" rx="8" fill="#ffc328" stroke="#1c1c22" stroke-width="3"/><text x="502" y="40" text-anchor="middle">4 Analyze</text>
+        <rect x="585" y="10" width="125" height="48" rx="8" fill="#2f7dff" stroke="#1c1c22" stroke-width="3"/><text x="647" y="40" text-anchor="middle" style="fill:#fff">5 Visualize</text>
+        <rect class="pulse" x="730" y="10" width="125" height="48" rx="8" fill="#ff3d94" stroke="#1c1c22" stroke-width="3"/><text x="792" y="40" text-anchor="middle" style="fill:#fff">6 Interpret</text>
+      </g>
+      <path class="flow" d="M130 34 H148"/><path class="flow" d="M275 34 H293"/><path class="flow" d="M420 34 H438"/><path class="flow" d="M565 34 H583"/><path class="flow" d="M710 34 H728"/>
+    </svg>
+  </div>
+  <div class="tablewrap" style="margin-top:10px">
+    <table>
+      <tr><th>STEP</th><th>WHAT YOU DO</th><th>TOOL</th><th>YOU END WITH</th></tr>
+      <tr><td><strong>Define</strong></td><td>Turn the topic into 3 sub-questions: Which app refunds most often? Which problems are most common? Do scam victims get refunds less often?</td><td>Doc</td><td>3 sub-questions</td></tr>
+      <tr><td><strong>Collect</strong></td><td>Download: Product = Money transfer…, Sub-product = Mobile or digital wallet, dates in Level 3.</td><td>CFPB site</td><td>1 CSV</td></tr>
+      <tr><td><strong>Clean</strong></td><td>Find each app's company name (who owns it?). Add an <span class="mono">App</span> column. Drop "In progress". Add keyword flags: <span class="mono">scam</span>, <span class="mono">frozen</span>, <span class="mono">wrong</span>.</td><td>Excel or Google Sheets</td><td>Clean CSV</td></tr>
+      <tr><td><strong>Analyze</strong></td><td>Write SQL for each sub-question. You decide which queries you need. Run the 4 checks (Level 5).</td><td>SQLite</td><td>5 checked queries</td></tr>
+      <tr><td><strong>Visualize</strong></td><td>Bar: % money back per app (label the count). Bar: top issues per app. Line: complaints per month.</td><td>Tableau</td><td>2 to 3 charts</td></tr>
+      <tr><td><strong>Interpret</strong></td><td>Answer "who refunds?" in 1 sentence. Add 3 findings and the limits. Record a short walkthrough video.</td><td>Doc + video</td><td>Final report</td></tr>
+    </table>
+  </div>
+  <details><summary>🕵️ Payment-app trap: why might Venmo or Zelle be hard to find?</summary><p>Hint: Venmo belongs to another company on this list. Zelle complaints are often filed against the person's bank. Read a few narratives to see how people describe them.</p></details>
+</section>
+
+<!-- LEVEL 2 -->
+<section class="level page" id="how">
+  <div class="lv">LEVEL 2 · HOW IT WORKS</div>
+  <h2>No weekly meetings. You drive.</h2>
+  <p>You work on your own schedule and report to me every week. You're free to try anything that helps you answer the question.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 860 190" width="860" role="img" aria-label="Loop: you work, then send a weekly report every Friday, repeat four times, then final report and final meeting">
+      <rect x="40" y="20" width="200" height="60" rx="10" fill="#ffc328" stroke="#1c1c22" stroke-width="3"/>
+      <text x="140" y="46" text-anchor="middle" font-weight="700">You work</text>
+      <text x="140" y="66" text-anchor="middle">any time</text>
+      <rect x="330" y="20" width="200" height="60" rx="10" fill="#2f7dff" stroke="#1c1c22" stroke-width="3"/>
+      <text x="430" y="46" text-anchor="middle" font-weight="700" style="fill:#fff">📝 Weekly report</text>
+      <text x="430" y="66" text-anchor="middle" style="fill:#fff">every Friday</text>
+      <path class="flow" d="M240 50 H328"/>
+      <path class="flow" d="M430 80 V120 H140 V82"/>
+      <text x="285" y="142" text-anchor="middle" font-weight="700">↻ repeat × 4</text>
+      <path class="flow" d="M530 50 H618"/>
+      <rect x="620" y="20" width="200" height="60" rx="10" fill="#fff" stroke="#1c1c22" stroke-width="3"/>
+      <text x="720" y="46" text-anchor="middle" font-weight="700">📄 Final report</text>
+      <text x="720" y="66" text-anchor="middle">Doc + video</text>
+      <path class="flow" d="M720 80 V118"/>
+      <rect class="pulse" x="620" y="120" width="200" height="56" rx="10" fill="#ff3d94" stroke="#1c1c22" stroke-width="3"/>
+      <text x="720" y="153" text-anchor="middle" font-weight="700" style="fill:#fff">🎤 Final meeting</text>
+    </svg>
+  </div>
+  <div class="grid3" style="margin-top:12px">
+    <div class="card"><h3>📝 Weekly report</h3><p>Private, just to me. Due Friday 11pm, your time: <span class="mono">Nov 13 · Nov 20 · Nov 27 · Dec 4</span>. Use the template in Level 8. Always include one question.</p></div>
+    <div class="card"><h3>📄 Final report</h3><p>Two parts: a Google Doc that answers the question, and a short video (8 min max) walking through how you solved it. Due with your Dec 4 report.</p></div>
+    <div class="card"><h3>🎤 Final meeting</h3><p>25 minutes per student: present how you solved it, then answer my questions.</p></div>
+  </div>
+  <div class="mission">⚠️ Stuck for more than a day? Don't wait for Friday. Message me.</div>
+</section>
+
+<!-- LEVEL 3 -->
+<section class="level page" id="data">
+  <div class="lv">LEVEL 3 · THE DATASET</div>
+  <h2>CFPB Consumer Complaint Database</h2>
+  <p>Run by the U.S. Consumer Financial Protection Bureau. Real complaints from real people, updated every day, free and public.</p>
+  <p>🔗 <a href="https://www.consumerfinance.gov/data-research/consumer-complaints/search/">consumerfinance.gov/data-research/consumer-complaints/search</a></p>
+  <ol class="steps">
+    <li>Open the link and set <strong>Date received</strong>: <span class="mono">2025-01-20</span> to <span class="mono">2026-11-08</span></li>
+    <li>Under <strong>Product</strong>, tick <strong>Money transfer, virtual currency, or money service</strong>, then sub-product <strong>Mobile or digital wallet</strong></li>
+    <li>Click <strong>Export data</strong> → <strong>CSV</strong> → full results</li>
+    <li>Open the file in Excel or Google Sheets and check the row count</li>
+  </ol>
+  <p style="margin-top:12px">This range keeps the file under 100k rows, small enough to download. The newest complaints may still be "In progress": watch for them.</p>
+  <p><strong>Columns you'll use most:</strong></p>
+  <div class="chips">
+    <span class="chip">Date received</span><span class="chip">Product</span><span class="chip">Issue</span><span class="chip">Company</span><span class="chip">State</span><span class="chip">Consumer complaint narrative</span><span class="chip">Company response to consumer</span><span class="chip">Timely response?</span>
+  </div>
+</section>
+
+<!-- LEVEL 4 -->
+<section class="level page" id="tools">
+  <div class="lv">LEVEL 4 · TOOLS</div>
+  <h2>One tool per job</h2>
+  <div class="diagram">
+    <svg viewBox="0 0 860 200" width="860" role="img" aria-label="Pipeline: CFPB CSV to Excel or Google Sheets to SQLite Online to Tableau Public, with Claude helping at every step">
+      <rect x="10" y="40" width="140" height="70" rx="10" fill="#fff" stroke="#1c1c22" stroke-width="3"/>
+      <text x="80" y="70" text-anchor="middle" font-weight="700">🗂 CFPB CSV</text>
+      <text x="80" y="90" text-anchor="middle">download</text>
+      <rect x="225" y="40" width="160" height="70" rx="10" fill="#a4d925" stroke="#1c1c22" stroke-width="3"/>
+      <text x="305" y="70" text-anchor="middle" font-weight="700">Excel / Sheets</text>
+      <text x="305" y="90" text-anchor="middle">look + clean</text>
+      <rect x="460" y="40" width="160" height="70" rx="10" fill="#ffc328" stroke="#1c1c22" stroke-width="3"/>
+      <text x="540" y="70" text-anchor="middle" font-weight="700">SQLite Online</text>
+      <text x="540" y="90" text-anchor="middle">answer with SQL</text>
+      <rect x="695" y="40" width="155" height="70" rx="10" fill="#2f7dff" stroke="#1c1c22" stroke-width="3"/>
+      <text x="772" y="70" text-anchor="middle" font-weight="700" style="fill:#fff">Tableau Public</text>
+      <text x="772" y="90" text-anchor="middle" style="fill:#fff">visualize</text>
+      <path class="flow" d="M150 75 H223"/>
+      <path class="flow" d="M385 75 H458"/>
+      <path class="flow" d="M620 75 H693"/>
+      <rect class="pulse" x="330" y="150" width="200" height="40" rx="20" fill="#ff3d94" stroke="#1c1c22" stroke-width="3"/>
+      <text x="430" y="175" text-anchor="middle" font-weight="700" style="fill:#fff">🤖 Claude helps everywhere</text>
+      <path class="flow helper" d="M330 170 C 200 170, 300 130, 305 112"/>
+      <path class="flow helper" d="M530 170 C 560 150, 545 130, 540 112"/>
+      <path class="flow helper" d="M530 175 C 700 175, 770 140, 772 112"/>
+    </svg>
+  </div>
+  <div class="grid3" style="margin-top:12px">
+    <div class="card"><h3>Excel or Google Sheets</h3><p>Your choice. First look, TRIM, filters, SEARCH/ISNUMBER keyword columns (like Homework 5).</p></div>
+    <div class="card"><h3>SQLite Online</h3><p>Import the clean CSV. Write SQL to answer your sub-questions.</p></div>
+    <div class="card"><h3>Tableau Public</h3><p>2 to 3 charts or one small dashboard. Publish it and link it.</p></div>
+  </div>
+</section>
+
+<!-- LEVEL 5 -->
+<section class="level page" id="sql">
+  <div class="lv">LEVEL 5 · SQL + VERIFY</div>
+  <h2>Your queries, your way. Then prove them.</h2>
+  <p>Import your clean CSV into SQLite Online. Which queries answer your sub-questions is up to you to figure out. Explore, try, ask Claude, break things.</p>
+  <div class="grid3">
+    <div class="card"><div class="e">🎯</div><h3>At least 5 queries</h3><p>Each one tied to a sub-question you wrote in Week 1.</p></div>
+    <div class="card"><div class="e">📈</div><h3>Simple to harder</h3><p>Start with what you can write alone. Build up from there.</p></div>
+    <div class="card"><div class="e">🗣</div><h3>Explain every line</h3><p>If you can't explain it in the video, it doesn't count.</p></div>
+  </div>
+
+  <h3 style="margin:20px 0 8px;font-size:18px">🔍 Before you trust a result, run these 4 checks</h3>
+  <div class="diagram">
+    <svg viewBox="0 0 860 120" width="860" role="img" aria-label="Four checks in order: guess first, add it up, spot check, ask why">
+      <rect x="10" y="20" width="180" height="80" rx="10" fill="#ffc328" stroke="#1c1c22" stroke-width="3"/>
+      <text x="100" y="52" text-anchor="middle" font-weight="700">1 · Guess first</text>
+      <text x="100" y="74" text-anchor="middle">write a guess</text>
+      <rect x="230" y="20" width="180" height="80" rx="10" fill="#a4d925" stroke="#1c1c22" stroke-width="3"/>
+      <text x="320" y="52" text-anchor="middle" font-weight="700">2 · Add it up</text>
+      <text x="320" y="74" text-anchor="middle">parts = total?</text>
+      <rect x="450" y="20" width="180" height="80" rx="10" fill="#2f7dff" stroke="#1c1c22" stroke-width="3"/>
+      <text x="540" y="52" text-anchor="middle" font-weight="700" style="fill:#fff">3 · Spot check</text>
+      <text x="540" y="74" text-anchor="middle" style="fill:#fff">same in Excel/Sheets?</text>
+      <rect x="670" y="20" width="180" height="80" rx="10" fill="#ff3d94" stroke="#1c1c22" stroke-width="3"/>
+      <text x="760" y="52" text-anchor="middle" font-weight="700" style="fill:#fff">4 · Ask why</text>
+      <text x="760" y="74" text-anchor="middle" style="fill:#fff">explain each line</text>
+      <path class="flow" d="M190 60 H228"/><path class="flow" d="M410 60 H448"/><path class="flow" d="M630 60 H668"/>
+    </svg>
+  </div>
+  <div class="grid3" style="margin-top:12px">
+    <div class="card"><h3>1 · Guess first</h3><p>Before running, write your guess. Way off? Find out why. Example: "I think about 20% got money back."</p></div>
+    <div class="card"><h3>2 · Add it up</h3><p>Group counts should add up to your total row count. Percentages stay between 0 and 100.</p></div>
+    <div class="card"><h3>3 · Spot check</h3><p>Pick one company. Filter it in Excel or Sheets. Same count as SQL? If not, one of them is wrong.</p></div>
+    <div class="card"><h3>4 · Ask why</h3><p>Ask Claude to explain your query line by line. Then change one line and predict the new result.</p></div>
+  </div>
+  <div class="mission">📸 In each weekly report, show one query + the check you ran on it.</div>
+</section>
+
+<section class="level page" id="boss" style="border-color:var(--pink);box-shadow:6px 6px 0 var(--pink)">
+  <div class="lv">BOSS LEVEL · ⚔️ CHALLENGES AI CAN'T SOLVE ALONE</div>
+  <h2>Only your data knows the answer</h2>
+  <p>Claude has never seen your file. It can suggest, but it can't know these answers. You have to run, check, and defend them. <strong>Do Boss 1 and Boss 2, then pick at least one more.</strong></p>
+  <div class="grid3">
+    <div class="card"><div class="e">🕵️</div><h3>Boss 1 · The Venmo hunt</h3><p>Venmo has no row of its own. How many Venmo complaints are there? Your number depends on how you search. Defend your method.</p></div>
+    <div class="card"><div class="e">🐛</div><h3>Boss 2 · Catch AI wrong</h3><p>Find at least one query where Claude's suggestion gave a wrong or misleading result on your data. Show the bad result, how you caught it, and the fix.</p></div>
+    <div class="card"><div class="e">🔗</div><h3>Boss 3 · Build a lookup table</h3><p>Make your own small table that maps each company name to an app. Connect it to the complaints table instead of typing an App column by hand.</p></div>
+    <div class="card"><div class="e">⏳</div><h3>Boss 4 · Better or worse?</h3><p>Did refunds get better or worse over time? First, make SQL understand the dates in this file. They may not look the way you expect.</p></div>
+    <div class="card"><div class="e">⚡</div><h3>Boss 5 · Who answers fastest?</h3><p>How many days pass between a complaint and the company getting it? Which app is slowest? Watch for odd values.</p></div>
+    <div class="card"><div class="e">⚖️</div><h3>Boss 6 · Myth or fact?</h3><p>Prove or bust: "Scam victims almost never get money back." Find the numbers, then say how sure you are and why.</p></div>
+  </div>
+  <div class="mission">🏆 In the final meeting, I compare your Boss 1 number with the others. If they differ, be ready to defend yours.</div>
+</section>
+
+<section class="level page" id="tableau">
+  <div class="lv">LEVEL 6 · FIRST STEPS IN TABLEAU</div>
+  <h2>From SQL result to published chart</h2>
+  <ol class="steps">
+    <li>In SQLite Online, export one query result as CSV</li>
+    <li>Tableau Public → <strong>Connect</strong> → <strong>Text file</strong> → pick the CSV</li>
+    <li>Drag a category (like App) to Rows and a number to Columns, then sort</li>
+    <li>Show the complaint count on the chart so readers see the sample size</li>
+    <li><strong>File → Save to Tableau Public</strong>, then copy the link into your report</li>
+  </ol>
+  <p style="margin-top:10px">Then try one new chart on your own: a line of complaints per month, or a map by state.</p>
+</section>
+
+<!-- LEVEL 7 -->
+<section class="level page" id="timeline">
+  <div class="lv">LEVEL 7 · TIMELINE</div>
+  <h2>Four weeks, one step each</h2>
+  <div class="weeks">
+    <div class="week w1"><span class="n">WEEK 1 · NOV 13</span><h3>Explore</h3>
+      <ul><li>Read your path (Level 1)</li><li>Download your data</li><li>Rows? Columns? Blanks? Weird values?</li><li>Write 2 to 3 sub-questions</li></ul>
+      <div class="ok">✅ On track if: you can describe your data in 5 sentences.</div></div>
+    <div class="week w2"><span class="n">WEEK 2 · NOV 20</span><h3>Clean + query</h3>
+      <ul><li>Fix company names, drop open complaints</li><li>Import to SQLite</li><li>Write your queries</li><li>Run the 4 checks on each</li></ul>
+      <div class="ok">✅ On track if: 5 queries, each with a check that passed.</div></div>
+    <div class="week w3"><span class="n">WEEK 3 · NOV 27</span><h3>Visualize + AI</h3>
+      <ul><li>Tableau: 2 to 3 charts from your query results</li><li>Boss 1, Boss 2 + one more</li><li>Claude tags 30 complaint stories by problem type</li><li>You check its 30 labels by hand</li></ul>
+      <div class="ok">✅ On track if: you know how often Claude was wrong.</div></div>
+    <div class="week w4"><span class="n">WEEK 4 · DEC 4</span><h3>Tell the story</h3>
+      <ul><li>Findings + limits</li><li>Final report doc</li><li>Record walkthrough video</li></ul>
+      <div class="ok">✅ On track if: a friend gets your answer in 1 minute.</div></div>
+  </div>
+
+  <h3 style="margin:20px 0 6px;font-size:18px">🕵️ Traps to watch for (click for a hint)</h3>
+  <details><summary>Company A has the most complaints. Is it the worst?</summary><p>Hint: big companies have more customers. Compare <strong>rates</strong> (share closed with relief, share on time), not raw counts. Skip companies with fewer than 100 complaints.</p></details>
+  <details><summary>Some rows say "In progress". Keep them?</summary><p>Hint: the company hasn't answered yet. Can you count them as "no relief"?</p></details>
+  <details><summary>One company, three spellings?</summary><p>Hint: apps often appear under a parent company name. Look up who owns your app.</p></details>
+  <details><summary>Does this data tell us which company is best?</summary><p>Hint: who files complaints? Happy customers don't. And who reports the "relief"? The company itself.</p></details>
+</section>
+
+<!-- LEVEL 6 -->
+<section class="level page" id="report">
+  <div class="lv">LEVEL 8 · WEEKLY REPORT TEMPLATE</div>
+  <h2>Copy this every Friday</h2>
+  <pre id="tpl">WEEK __ REPORT · [Your name]
+
+1. What I tried this week:
+2. What I found (one number or screenshot):
+   Query I'm proudest of + the check I ran on it:
+3. Where I got stuck, and how I got unstuck (or not yet):
+4. My question for Nhat:
+5. Plan for next week:
+6. AI chat link(s) I used:</pre>
+  <button class="btn" id="copy" type="button">📋 Copy template</button>
+  <p style="margin-top:12px">💡 Point 3 matters most. By Week 4, those notes become the story of your final report.</p>
+</section>
+
+<!-- LEVEL 7 -->
+<section class="level page" id="rules">
+  <div class="lv">LEVEL 9 · RULES + FINISH LINE</div>
+  <h2>How to use AI, and what "done" looks like</h2>
+  <div class="rules">
+    <div class="rule">✅ Ask Claude to explain, suggest SQL, review your chart, or find holes in your logic.</div>
+    <div class="rule">✅ Share every AI chat link in your report.</div>
+    <div class="rule no">❌ Don't paste a number you can't check or a query you can't explain.</div>
+    <div class="rule no">❌ Don't let AI write your findings. Your words, your conclusions.</div>
+  </div>
+  <h3 style="margin:20px 0 8px;font-size:18px">🏁 Final report checklist</h3>
+  <div class="chips">
+    <span class="chip">☐ Question + sub-questions</span><span class="chip">☐ Data: what, where, how filtered</span><span class="chip">☐ Cleaning steps</span><span class="chip">☐ 5 SQL queries + how you checked them</span><span class="chip">☐ Tableau link</span><span class="chip">☐ 3 findings</span><span class="chip">☐ Claude accuracy check</span><span class="chip">☐ Boss 1, Boss 2 + one more</span><span class="chip">☐ Limits</span><span class="chip">☐ Video (8 min max): data → queries → checks → charts → answer</span>
+  </div>
+  <div class="mission">🎯 Final mission: one clear answer to "who gives my money back?", backed by data you can defend.</div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement; root.classList.add('js');
+  var pages=[].slice.call(document.querySelectorAll('.page'));
+  var links=[].slice.call(document.querySelectorAll('.tabs a'));
+  var bar=document.getElementById('xp'),txt=document.getElementById('xptext');
+  var label={};links.forEach(function(l){label[l.getAttribute('href').slice(1)]=l.textContent;});
+  pages.forEach(function(p,i){
+    var nav=document.createElement('div');nav.className='pager';
+    if(i>0){var a=document.createElement('a');a.className='prev';a.href='#'+pages[i-1].id;a.textContent='← '+label[pages[i-1].id];nav.appendChild(a);}
+    nav.appendChild(document.createElement('span'));
+    if(i<pages.length-1){var n=document.createElement('a');n.href='#'+pages[i+1].id;n.textContent=label[pages[i+1].id]+' →';nav.appendChild(n);}
+    p.appendChild(nav);
+  });
+  function show(want){
+    var id=typeof want==='string'?want:location.hash.slice(1),idx=0;
+    pages.forEach(function(p,i){if(p.id===id)idx=i;});
+    pages.forEach(function(p,i){p.classList.toggle('active',i===idx);});
+    links.forEach(function(l){if(l.getAttribute('href')==='#'+pages[idx].id){l.setAttribute('aria-current','page');try{l.scrollIntoView({block:'nearest',inline:'nearest'});}catch(e){}}else{l.removeAttribute('aria-current');}});
+    var pct=Math.round((idx+1)/pages.length*100);bar.style.width=pct+'%';txt.textContent=(idx+1)+' / '+pages.length;
+    window.scrollTo(0,0);
+  }
+  window.addEventListener('hashchange',function(){show();});
+  document.addEventListener('click',function(e){
+    var a=e.target.closest&&e.target.closest('a[href^="#"]');if(!a)return;
+    var id=a.getAttribute('href').slice(1);e.preventDefault();show(id);
+    try{history.replaceState(null,'','#'+id);}catch(err){}
+  });
+  show();
+  var b=document.getElementById('copy');
+  b.addEventListener('click',function(){
+    var t=document.getElementById('tpl').textContent;
+    try{navigator.clipboard.writeText(t).then(function(){b.textContent='✅ Copied';setTimeout(function(){b.textContent='📋 Copy template';},1600);},function(){b.textContent='Select the text above and copy';});}
+    catch(e){b.textContent='Select the text above and copy';}
+  });
+})();
+</script>
+</body>
+</html>

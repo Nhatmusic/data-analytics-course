@@ -62,6 +62,7 @@
   .session-card[data-session="s8"]{--sc:var(--yellow);}
   .session-card[data-session="s9"]{--sc:var(--blue);}
   .session-card[data-session="s10"]{--sc:var(--pink);}
+  .session-card[data-session="mp1"]{--sc:var(--lime);}
   .sc-badge{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
   .sc-badge b{color:var(--ink);}
   .session-card h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;margin:0 0 10px;line-height:1.25;}
@@ -187,6 +188,12 @@
         <p class="sc-desc">Clear 5 levels to unlock a Boss level on a real pizza shop dataset, then explain your work one on one with the teacher.</p>
       </div>
 
+      <div class="session-card" data-session="mp1" data-open="mp1" tabindex="0" role="button">
+        <div class="sc-badge">Mini Project · <b>4 weeks</b></div>
+        <h2>Who Refunds? Payment Apps</h2>
+        <p class="sc-desc">Is complaining worth it? Dig into the CFPB Consumer Complaint Database with SQL, then publish a chart that answers the question yourself.</p>
+      </div>
+
     </div>
   </div>
 
@@ -262,7 +269,8 @@ const SESSION_FILES = {
   s7: 'slides/session-07-statistics-basics.html',
   s8: 'slides/session-08-relational-databases.html',
   s9: 'slides/session-09-basic-sql.html',
-  s10: 'slides/session-10-final-exam.html'
+  s10: 'slides/session-10-final-exam.html',
+  mp1: 'slides/mini-project-Who-Refunds-Payment-Apps.html'
 };
 
 const SESSION_META = {
@@ -275,7 +283,8 @@ const SESSION_META = {
   s7: 'Session 07 — Two Kinds of Statistics',
   s8: 'Session 08 — From Sheet to Database',
   s9: 'Session 09 — Basic SQL: Student Presentations',
-  s10: 'Session 10 — Season 1 Final Exam'
+  s10: 'Session 10 — Season 1 Final Exam',
+  mp1: 'Mini Project — Who Refunds? Payment Apps'
 };
 
 const landing = document.getElementById('landing');
