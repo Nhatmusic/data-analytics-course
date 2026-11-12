@@ -155,7 +155,7 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
 <section class="level page" id="question">
   <div class="lv">LEVEL 1 · THE QUESTION</div>
   <h2>What you're answering</h2>
-  <div class="q">"If something goes wrong in Cash App, Venmo, Zelle, or PayPal, who gives my money back?"</div>
+  <div class="q">"If something goes wrong in Cash App, PayPal/Venmo, or Zelle, who gives my money back?"</div>
   <p><strong>Why it matters:</strong> you probably send money with these apps every week. Wrong transfer, frozen account, scam: you'd want to know who helps when things go wrong. This is real data that nobody has summarized for students yet.</p>
   <p><strong>Everyone works on the same topic.</strong> Same data, same question. Your process, checks, and story are your own.</p>
 
@@ -178,14 +178,14 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
     <table>
       <tr><th>STEP</th><th>WHAT YOU DO</th><th>TOOL</th><th>YOU END WITH</th></tr>
       <tr><td><strong>Define</strong></td><td>Turn the topic into 3 sub-questions: Which app refunds most often? Which problems are most common? Do scam victims get refunds less often?</td><td>Doc</td><td>3 sub-questions</td></tr>
-      <tr><td><strong>Collect</strong></td><td>Download: Product = Money transfer…, Sub-product = Mobile or digital wallet, dates in Level 3.</td><td>CFPB site</td><td>1 CSV</td></tr>
-      <tr><td><strong>Clean</strong></td><td>Find each app's company name (who owns it?). Add an <span class="mono">App</span> column. Drop "In progress". Add keyword flags: <span class="mono">scam</span>, <span class="mono">frozen</span>, <span class="mono">wrong</span>.</td><td>Excel or Google Sheets</td><td>Clean CSV</td></tr>
+      <tr><td><strong>Collect</strong></td><td>Download: Product = Money transfer…, all sub-products, dates in Level 3.</td><td>CFPB site</td><td>1 CSV</td></tr>
+      <tr><td><strong>Clean</strong></td><td>Find which company runs each app. Add an <span class="mono">App</span> column. Drop "In progress". Use the <span class="mono">Issue</span> column to spot scam complaints. Watch for text that says "None".</td><td>Excel or Google Sheets</td><td>Clean CSV</td></tr>
       <tr><td><strong>Analyze</strong></td><td>Write SQL for each sub-question. You decide which queries you need. Run the 4 checks (Level 5).</td><td>SQLite</td><td>5 checked queries</td></tr>
       <tr><td><strong>Visualize</strong></td><td>Bar: % money back per app (label the count). Bar: top issues per app. Line: complaints per month.</td><td>Tableau</td><td>2 to 3 charts</td></tr>
       <tr><td><strong>Interpret</strong></td><td>Answer "who refunds?" in 1 sentence. Add 3 findings and the limits. Record a short walkthrough video.</td><td>Doc + video</td><td>Final report</td></tr>
     </table>
   </div>
-  <details><summary>🕵️ Payment-app trap: why might Venmo or Zelle be hard to find?</summary><p>Hint: Venmo belongs to another company on this list. Zelle complaints are often filed against the person's bank. Read a few narratives to see how people describe them.</p></details>
+  <details><summary>🕵️ Payment-app trap: why can't you find "Venmo" or "Zelle" anywhere in the data?</summary><p>Hint: complaints are listed under the company that runs the app, not the app name. Venmo shares a company with another app on this list. Some Zelle complaints are filed against people's banks instead, and you can't tell which ones.</p></details>
 </section>
 
 <!-- LEVEL 2 -->
@@ -229,14 +229,15 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
   <p>🔗 <a href="https://www.consumerfinance.gov/data-research/consumer-complaints/search/">consumerfinance.gov/data-research/consumer-complaints/search</a></p>
   <ol class="steps">
     <li>Open the link and set <strong>Date received</strong>: <span class="mono">2025-01-20</span> to <span class="mono">2026-11-08</span></li>
-    <li>Under <strong>Product</strong>, tick <strong>Money transfer, virtual currency, or money service</strong>, then sub-product <strong>Mobile or digital wallet</strong></li>
+    <li>Under <strong>Product</strong>, tick <strong>Money transfer, virtual currency, or money service</strong>. Keep all sub-products.</li>
     <li>Click <strong>Export data</strong> → <strong>CSV</strong> → full results</li>
     <li>Open the file in Excel or Google Sheets and check the row count</li>
   </ol>
-  <p style="margin-top:12px">This range keeps the file under 100k rows, small enough to download. The newest complaints may still be "In progress": watch for them.</p>
+  <p style="margin-top:12px">You should get about 80,000 rows and 15 columns. The newest complaints may still be "In progress": watch for them.</p>
+  <p>📌 Since August 2026, CFPB no longer publishes the stories people wrote in their complaints. You only get the categories, dates, and outcomes.</p>
   <p><strong>Columns you'll use most:</strong></p>
   <div class="chips">
-    <span class="chip">Date received</span><span class="chip">Product</span><span class="chip">Issue</span><span class="chip">Company</span><span class="chip">State</span><span class="chip">Consumer complaint narrative</span><span class="chip">Company response to consumer</span><span class="chip">Timely response?</span>
+    <span class="chip">Date received</span><span class="chip">Sub-product</span><span class="chip">Issue</span><span class="chip">Company</span><span class="chip">State</span><span class="chip">Date sent to company</span><span class="chip">Company response to consumer</span><span class="chip">Timely response?</span>
   </div>
 </section>
 
@@ -269,7 +270,7 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
     </svg>
   </div>
   <div class="grid3" style="margin-top:12px">
-    <div class="card"><h3>Excel or Google Sheets</h3><p>Your choice. First look, TRIM, filters, SEARCH/ISNUMBER keyword columns (like Homework 5).</p></div>
+    <div class="card"><h3>Excel or Google Sheets</h3><p>Your choice. First look, filters, pivot tables, and an App column built with formulas (like Homework 5).</p></div>
     <div class="card"><h3>SQLite Online</h3><p>Import the clean CSV. Write SQL to answer your sub-questions.</p></div>
     <div class="card"><h3>Tableau Public</h3><p>2 to 3 charts or one small dashboard. Publish it and link it.</p></div>
   </div>
@@ -318,10 +319,10 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
   <h2>Only your data knows the answer</h2>
   <p>Claude has never seen your file. It can suggest, but it can't know these answers. You have to run, check, and defend them. <strong>Do Boss 1 and Boss 2, then pick at least one more.</strong></p>
   <div class="grid3">
-    <div class="card"><div class="e">🕵️</div><h3>Boss 1 · The Venmo hunt</h3><p>Venmo has no row of its own. How many Venmo complaints are there? Your number depends on how you search. Defend your method.</p></div>
+    <div class="card"><div class="e">🕵️</div><h3>Boss 1 · The filter trap</h3><p>Count each app's complaints using only the "Mobile or digital wallet" sub-product. Then count again with all sub-products. How much changes? Which count is fair, and why?</p></div>
     <div class="card"><div class="e">🐛</div><h3>Boss 2 · Catch AI wrong</h3><p>Find at least one query where Claude's suggestion gave a wrong or misleading result on your data. Show the bad result, how you caught it, and the fix.</p></div>
     <div class="card"><div class="e">🔗</div><h3>Boss 3 · Build a lookup table</h3><p>Make your own small table that maps each company name to an app. Connect it to the complaints table instead of typing an App column by hand.</p></div>
-    <div class="card"><div class="e">⏳</div><h3>Boss 4 · Better or worse?</h3><p>Did refunds get better or worse over time? First, make SQL understand the dates in this file. They may not look the way you expect.</p></div>
+    <div class="card"><div class="e">⏳</div><h3>Boss 4 · Better or worse?</h3><p>Did complaints or refunds change over time? First, make SQL understand the dates in this file. They may not look the way you expect. Look closely at the first weeks of the data.</p></div>
     <div class="card"><div class="e">⚡</div><h3>Boss 5 · Who answers fastest?</h3><p>How many days pass between a complaint and the company getting it? Which app is slowest? Watch for odd values.</p></div>
     <div class="card"><div class="e">⚖️</div><h3>Boss 6 · Myth or fact?</h3><p>Prove or bust: "Scam victims almost never get money back." Find the numbers, then say how sure you are and why.</p></div>
   </div>
@@ -350,11 +351,11 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
       <ul><li>Read your path (Level 1)</li><li>Download your data</li><li>Rows? Columns? Blanks? Weird values?</li><li>Write 2 to 3 sub-questions</li></ul>
       <div class="ok">✅ On track if: you can describe your data in 5 sentences.</div></div>
     <div class="week w2"><span class="n">WEEK 2 · NOV 20</span><h3>Clean + query</h3>
-      <ul><li>Fix company names, drop open complaints</li><li>Import to SQLite</li><li>Write your queries</li><li>Run the 4 checks on each</li></ul>
+      <ul><li>Map companies to apps, drop open complaints</li><li>Import to SQLite</li><li>Write your queries</li><li>Run the 4 checks on each</li></ul>
       <div class="ok">✅ On track if: 5 queries, each with a check that passed.</div></div>
     <div class="week w3"><span class="n">WEEK 3 · NOV 27</span><h3>Visualize + AI</h3>
-      <ul><li>Tableau: 2 to 3 charts from your query results</li><li>Boss 1, Boss 2 + one more</li><li>Claude tags 30 complaint stories by problem type</li><li>You check its 30 labels by hand</li></ul>
-      <div class="ok">✅ On track if: you know how often Claude was wrong.</div></div>
+      <ul><li>Tableau: 2 to 3 charts from your query results</li><li>Boss 1, Boss 2 + one more</li><li>Claude groups the 16 Issue values into 4 to 5 problem types</li><li>You check every one of its choices</li></ul>
+      <div class="ok">✅ On track if: you know where Claude's grouping was wrong.</div></div>
     <div class="week w4"><span class="n">WEEK 4 · DEC 4</span><h3>Tell the story</h3>
       <ul><li>Findings + limits</li><li>Final report doc</li><li>Record walkthrough video</li></ul>
       <div class="ok">✅ On track if: a friend gets your answer in 1 minute.</div></div>
@@ -363,7 +364,8 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
   <h3 style="margin:20px 0 6px;font-size:18px">🕵️ Traps to watch for (click for a hint)</h3>
   <details><summary>Company A has the most complaints. Is it the worst?</summary><p>Hint: big companies have more customers. Compare <strong>rates</strong> (share closed with relief, share on time), not raw counts. Skip companies with fewer than 100 complaints.</p></details>
   <details><summary>Some rows say "In progress". Keep them?</summary><p>Hint: the company hasn't answered yet. Can you count them as "no relief"?</p></details>
-  <details><summary>One company, three spellings?</summary><p>Hint: apps often appear under a parent company name. Look up who owns your app.</p></details>
+  <details><summary>Searching for "Block" to find Cash App?</summary><p>Hint: more than one company name contains that word. Check every match before you trust the count.</p></details>
+  <details><summary>A column full of "None". Is it empty?</summary><p>Hint: some columns use the word "None" as text instead of leaving the cell blank. Does your count treat it as missing?</p></details>
   <details><summary>Does this data tell us which company is best?</summary><p>Hint: who files complaints? Happy customers don't. And who reports the "relief"? The company itself.</p></details>
 </section>
 
