@@ -157,6 +157,7 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
   <h2>What you're answering</h2>
   <div class="q">"If something goes wrong in Cash App, PayPal/Venmo, or Zelle, who gives my money back?"</div>
   <p><strong>Why it matters:</strong> you probably send money with these apps every week. Wrong transfer, frozen account, scam: you'd want to know who helps when things go wrong. This is real data that nobody has summarized for students yet.</p>
+  <div class="mission" style="margin:0 0 16px">🛡 <strong>Finding the answer is the easy part.</strong> What you must prove: does your answer survive at least 3 different checks, and what could still make it wrong?</div>
   <p><strong>Everyone works on the same topic.</strong> Same data, same question. Your process, checks, and story are your own.</p>
 
   <h3 style="margin:24px 0 6px;font-size:20px">🗺 Your path, step by step</h3>
@@ -181,8 +182,8 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
       <tr><td><strong>Collect</strong></td><td>Download: Product = Money transfer…, all sub-products, dates in Level 3.</td><td>CFPB site</td><td>1 CSV</td></tr>
       <tr><td><strong>Clean</strong></td><td>Find which company runs each app. Add an <span class="mono">App</span> column. Drop "In progress". Use the <span class="mono">Issue</span> column to spot scam complaints. Watch for text that says "None".</td><td>Excel or Google Sheets</td><td>Clean CSV</td></tr>
       <tr><td><strong>Analyze</strong></td><td>Write SQL for each sub-question. You decide which queries you need. Run the 4 checks (Level 5).</td><td>SQLite</td><td>5 checked queries</td></tr>
-      <tr><td><strong>Visualize</strong></td><td>Bar: % money back per app (label the count). Bar: top issues per app. Line: complaints per month.</td><td>Tableau</td><td>2 to 3 charts</td></tr>
-      <tr><td><strong>Interpret</strong></td><td>Answer "who refunds?" in 1 sentence. Add 3 findings and the limits. Record a short walkthrough video.</td><td>Doc + video</td><td>Final report</td></tr>
+      <tr><td><strong>Visualize</strong></td><td>Bar: % money back per app (label the count). Bar: top issues per app (careful: see the Issue trap in Level 7). Line: complaints per month.</td><td>Tableau</td><td>2 to 3 charts</td></tr>
+      <tr><td><strong>Interpret</strong></td><td>Answer "who refunds?" in 1 sentence. Test it 3 ways (different slices of the data). Say what could make it wrong. Record a short walkthrough video.</td><td>Doc + video</td><td>Final report</td></tr>
     </table>
   </div>
   <details><summary>🕵️ Payment-app trap: why can't you find "Venmo" or "Zelle" anywhere in the data?</summary><p>Hint: complaints are listed under the company that runs the app, not the app name. Venmo shares a company with another app on this list. Some Zelle complaints are filed against people's banks instead, and you can't tell which ones.</p></details>
@@ -323,8 +324,9 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
     <div class="card"><div class="e">🐛</div><h3>Boss 2 · Catch AI wrong</h3><p>Find at least one query where Claude's suggestion gave a wrong or misleading result on your data. Show the bad result, how you caught it, and the fix.</p></div>
     <div class="card"><div class="e">🔗</div><h3>Boss 3 · Build a lookup table</h3><p>Make your own small table that maps each company name to an app. Connect it to the complaints table instead of typing an App column by hand.</p></div>
     <div class="card"><div class="e">⏳</div><h3>Boss 4 · Better or worse?</h3><p>Did complaints or refunds change over time? First, make SQL understand the dates in this file. They may not look the way you expect. Look closely at the first weeks of the data.</p></div>
-    <div class="card"><div class="e">⚡</div><h3>Boss 5 · Who answers fastest?</h3><p>How many days pass between a complaint and the company getting it? Which app is slowest? Watch for odd values.</p></div>
+    <div class="card"><div class="e">⚡</div><h3>Boss 5 · Who answers on time?</h3><p>Which app misses the response deadline most often? Use the right column and prove it's the right one. Then explain why "Date sent to company" can't answer this. Give one possible reason for the difference, and name the data you'd need to prove it.</p></div>
     <div class="card"><div class="e">⚖️</div><h3>Boss 6 · Myth or fact?</h3><p>Prove or bust: "Scam victims almost never get money back." Find the numbers, then say how sure you are and why.</p></div>
+    <div class="card"><div class="e">🧪</div><h3>Boss 7 · Too clean to be true?</h3><p>If an app's refund rate is almost exactly zero, is that the real story or just how the company reports? Find evidence for both sides, then pick one.</p></div>
   </div>
   <div class="mission">🏆 In the final meeting, I compare your Boss 1 number with the others. If they differ, be ready to defend yours.</div>
 </section>
@@ -357,7 +359,7 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
       <ul><li>Tableau: 2 to 3 charts from your query results</li><li>Boss 1, Boss 2 + one more</li><li>Claude groups the 16 Issue values into 4 to 5 problem types</li><li>You check every one of its choices</li></ul>
       <div class="ok">✅ On track if: you know where Claude's grouping was wrong.</div></div>
     <div class="week w4"><span class="n">WEEK 4 · DEC 4</span><h3>Tell the story</h3>
-      <ul><li>Findings + limits</li><li>Final report doc</li><li>Record walkthrough video</li></ul>
+      <ul><li>Test your answer 3 ways</li><li>Findings + what could make you wrong</li><li>Final report doc</li><li>Record walkthrough video</li></ul>
       <div class="ok">✅ On track if: a friend gets your answer in 1 minute.</div></div>
   </div>
 
@@ -366,6 +368,7 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
   <details><summary>Some rows say "In progress". Keep them?</summary><p>Hint: the company hasn't answered yet. Can you count them as "no relief"?</p></details>
   <details><summary>Searching for "Block" to find Cash App?</summary><p>Hint: more than one company name contains that word. Check every match before you trust the count.</p></details>
   <details><summary>A column full of "None". Is it empty?</summary><p>Hint: some columns use the word "None" as text instead of leaving the cell blank. Does your count treat it as missing?</p></details>
+  <details><summary>Is "Other transaction problem" really one kind of problem?</summary><p>Hint: the list of Issues a person can pick depends on the Sub-product they chose. Compare which Issues appear for "Mobile or digital wallet" vs "Domestic (US) money transfer". Is a "top issues per app" chart showing problems, or forms?</p></details>
   <details><summary>Does this data tell us which company is best?</summary><p>Hint: who files complaints? Happy customers don't. And who reports the "relief"? The company itself.</p></details>
 </section>
 
@@ -398,9 +401,9 @@ pre{background:var(--ink);color:#f2f2ea;border-radius:10px;padding:14px;font:13p
   </div>
   <h3 style="margin:20px 0 8px;font-size:18px">🏁 Final report checklist</h3>
   <div class="chips">
-    <span class="chip">☐ Question + sub-questions</span><span class="chip">☐ Data: what, where, how filtered</span><span class="chip">☐ Cleaning steps</span><span class="chip">☐ 5 SQL queries + how you checked them</span><span class="chip">☐ Tableau link</span><span class="chip">☐ 3 findings</span><span class="chip">☐ Claude accuracy check</span><span class="chip">☐ Boss 1, Boss 2 + one more</span><span class="chip">☐ Limits</span><span class="chip">☐ Video (8 min max): data → queries → checks → charts → answer</span>
+    <span class="chip">☐ Question + sub-questions</span><span class="chip">☐ Data: what, where, how filtered</span><span class="chip">☐ Cleaning steps</span><span class="chip">☐ 5 SQL queries + how you checked them</span><span class="chip">☐ Tableau link</span><span class="chip">☐ Main answer + 3 checks it survived</span><span class="chip">☐ What could make it wrong</span><span class="chip">☐ Claude accuracy check</span><span class="chip">☐ Boss 1, Boss 2 + one more</span><span class="chip">☐ Limits</span><span class="chip">☐ Video (8 min max): data → queries → checks → charts → answer</span>
   </div>
-  <div class="mission">🎯 Final mission: one clear answer to "who gives my money back?", backed by data you can defend.</div>
+  <div class="mission">🎯 Final mission: one clear answer to "who gives my money back?" that survives 3 checks, plus an honest note on what could still make it wrong.</div>
 </section>
 
 </div>
